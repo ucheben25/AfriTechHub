@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Afri Tech Hub - Empowering African entrepreneurs by sharing vacancies, jobs, grants, scholarships, internships, and business funding opportunities with no login or registration.">
+  <meta name="keywords" content="African tech, entrepreneurship opportunities, African grants, scholarships for Africans, jobs in Africa, tech vacancies Africa, African startups funding, internships Africa">
+  <meta name="author" content="Afri Tech Hub">
+  <meta property="og:title" content="Afri Tech Hub - African Opportunities Portal">
+  <meta property="og:description" content="Find verified jobs, grants, scholarships, and funding opportunities across Africa. Access is completely open and free.">
+  <meta property="og:type" content="website">
+  <title>Afri Tech Hub | Empowering African Entrepreneurs & Youth</title>
+  
+  <!-- Website Favicon / Browser Tab Icon -->
+  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  
+  <!-- FontAwesome for modern icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ==========================================
+       GLOBAL NAVBAR / HEADER
+       ========================================== -->
+  <header class="site-header">
+    <div class="container navbar">
+      <!-- Logo / Brand -->
+      <a href="#home" class="brand" id="nav-brand">
+        <img src="logo.jpg" alt="Afri Tech Hub Logo" class="brand-logo-img">
+        <div class="brand-text-container">
+          <span class="brand-name">Afri Tech Hub</span>
+          <span class="brand-tagline">Empowering African Entrepreneurs</span>
+        </div>
+      </a>
+
+      <!-- Navigation Links -->
+      <nav class="nav-menu" id="nav-menu">
+        <a href="#home" class="nav-link active" data-route="home">Home</a>
+        <a href="#opportunities" class="nav-link" data-route="opportunities">Opportunities</a>
+        <a href="#categories" class="nav-link" data-route="categories">Categories</a>
+        <a href="#about" class="nav-link" data-route="about">About</a>
+        <a href="#faq" class="nav-link" data-route="faq">FAQs</a>
+        <a href="#contact" class="nav-link" data-route="contact">Contact</a>
+      </nav>
+
+      <!-- Action buttons: Theme Toggle & Hamburger -->
+      <div class="nav-actions">
+        <button id="theme-toggle" class="icon-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
+          <i class="fa-solid fa-moon" id="theme-icon"></i>
+        </button>
+        <button id="menu-toggle" class="icon-btn menu-toggle" title="Toggle Navigation Menu" aria-label="Toggle Navigation">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       MAIN DYNAMIC CONTAINER (SPA VIEWS)
+       ========================================== -->
+  <main id="app-content" class="animate-fade-in">
+    <!-- Views will be injected here dynamically by app.js -->
+  </main>
+
+  <!-- ==========================================
+       GLOBAL FOOTER
+       ========================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Brand / About Column -->
+        <div class="footer-col">
+          <div class="brand footer-brand">
+            <img src="logo.jpg" alt="Afri Tech Hub Logo" class="brand-logo-img">
+            <div class="brand-text-container">
+              <span class="brand-name">Afri Tech Hub</span>
+              <span class="brand-tagline">Empowering African Entrepreneurs</span>
+            </div>
+          </div>
+          <p class="footer-desc">
+            Empowering African innovators, graduates, and entrepreneurs by curating and providing direct, open access to life-changing career, academic, and financial opportunities.
+          </p>
+          <div class="social-links">
+            <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://instagram.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          </div>
+        </div>
+
+        <!-- Opportunities Quick Links -->
+        <div class="footer-col">
+          <h3 class="footer-heading">Opportunities</h3>
+          <ul class="footer-links">
+            <li><a href="#opportunities?category=jobs" class="footer-link">Jobs & Vacancies</a></li>
+            <li><a href="#opportunities?category=grants" class="footer-link">Grants & Fellowships</a></li>
+            <li><a href="#opportunities?category=scholarships" class="footer-link">Scholarships</a></li>
+            <li><a href="#opportunities?category=business-funding" class="footer-link">Business Funding</a></li>
+            <li><a href="#opportunities?category=internships" class="footer-link">Internships</a></li>
+          </ul>
+        </div>
+
+        <!-- Navigation Quick Links -->
+        <div class="footer-col">
+          <h3 class="footer-heading">Platform</h3>
+          <ul class="footer-links">
+            <li><a href="#home" class="footer-link">Home</a></li>
+            <li><a href="#about" class="footer-link">About Us</a></li>
+            <li><a href="#categories" class="footer-link">Browse Categories</a></li>
+            <li><a href="#faq" class="footer-link">Frequently Asked Questions</a></li>
+            <li><a href="#contact" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact Column -->
+        <div class="footer-col">
+          <h3 class="footer-heading">Get in Touch</h3>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>Victoria Island, Lagos, Nigeria</span>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-envelope"></i>
+            <span>info@afritechhub.org</span>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-phone"></i>
+            <span>+2349159701354</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Bottom Links & Copyright -->
+      <div class="footer-bottom">
+        <p>&copy; 2026 Afri Tech Hub. All rights reserved. Built for community growth.</p>
+        <div class="footer-bottom-links">
+          <a href="#privacy" class="footer-bottom-link">Privacy Policy</a>
+          <a href="#terms" class="footer-bottom-link">Terms of Use</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       FLOATING ACTIONS (WHATSAPP & ADD OPPORTUNITY)
+       ========================================== -->
+  <div class="floating-actions-container">
+    <!-- Floating Add Opportunity Button -->
+    <button id="floating-add-btn" class="floating-btn floating-add-post" aria-label="Add Opportunity">
+      <i class="fa-solid fa-plus"></i>
+      <span class="floating-tooltip">Post Opportunity</span>
+    </button>
+    
+    <!-- Floating WhatsApp Community Link -->
+    <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="floating-btn floating-whatsapp" aria-label="Join WhatsApp Community">
+      <i class="fa-brands fa-whatsapp"></i>
+      <span class="floating-tooltip">Join WhatsApp Hub</span>
+    </a>
+  </div>
+
+  <!-- ==========================================
+       MODAL: QUICK ADD OPPORTUNITY
+       ========================================== -->
+  <div class="modal-overlay" id="add-post-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-bullhorn" style="color: var(--color-primary); margin-right: 10px;"></i>Post an Opportunity</h2>
+        <button class="modal-close" id="modal-close-btn" aria-label="Close Modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="add-opportunity-form">
+          <div class="form-group">
+            <label for="opp-title" class="form-label">Opportunity Title *</label>
+            <input type="text" id="opp-title" class="form-control" placeholder="e.g. Senior Software Engineer, Seed Capital Grant 2026" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="opp-company" class="form-label">Organization / Sponsor *</label>
+              <input type="text" id="opp-company" class="form-control" placeholder="e.g. Google, MTN, UNICEF" required>
+            </div>
+            <div class="form-group">
+              <label for="opp-category" class="form-label">Category *</label>
+              <select id="opp-category" class="form-control" required>
+                <option value="" disabled selected>Select category</option>
+                <option value="Jobs">Jobs</option>
+                <option value="Grants">Grants</option>
+                <option value="Scholarships">Scholarships</option>
+                <option value="Internships">Internships</option>
+                <option value="Business Funding">Business Funding</option>
+                <option value="Vacancies">Vacancies</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="opp-location" class="form-label">Location *</label>
+              <input type="text" id="opp-location" class="form-control" placeholder="e.g. Remote, Lagos (Nigeria), Kigali" required>
+            </div>
+            <div class="form-group">
+              <label for="opp-deadline" class="form-label">Application Deadline *</label>
+              <input type="date" id="opp-deadline" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="opp-short" class="form-label">Short Summary * (Max 150 chars)</label>
+            <input type="text" id="opp-short" class="form-control" placeholder="Brief summary to show in listings" maxlength="150" required>
+          </div>
+
+          <div class="form-group">
+            <label for="opp-desc" class="form-label">Full Opportunity Details *</label>
+            <textarea id="opp-desc" class="form-control" rows="4" placeholder="Detailed description of what the opportunity is about..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="opp-req" class="form-label">Key Requirements (One requirement per line) *</label>
+            <textarea id="opp-req" class="form-control" rows="3" placeholder="Requirement 1&#10;Requirement 2&#10;Requirement 3" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="opp-ben" class="form-label">Key Benefits & Offerings (One benefit per line) *</label>
+            <textarea id="opp-ben" class="form-control" rows="3" placeholder="Benefit 1&#10;Benefit 2&#10;Benefit 3" required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="opp-url" class="form-label">Application URL / Link *</label>
+              <input type="url" id="opp-url" class="form-control" placeholder="https://company.com/apply-link" required>
+            </div>
+            <div class="form-group">
+              <label for="opp-img-file" class="form-label">Upload Opportunity Image (Optional)</label>
+              <input type="file" id="opp-img-file" class="form-control" accept="image/*">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+            Publish Opportunity <i class="fa-solid fa-paper-plane" style="margin-left: 8px;"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       GLOBAL ALERT POPUPS (TOASTS)
+       ========================================== -->
+  <div id="toast-alert" class="alert-popup success">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-message">Operation successful!</span>
+  </div>
+
+  <!-- ==========================================
+       DATA & CORE JAVASCRIPT FILES
+       ========================================== -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
