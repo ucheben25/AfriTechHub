@@ -1402,30 +1402,6 @@ const App = {
       `;
     }
 
-    const requirementsList = opp.requirements.map(req => `<li><i class="fa-regular fa-square-check" style="color:var(--color-primary); margin-right:10px;"></i> ${req}</li>`).join('');
-    const benefitsList = opp.benefits.map(ben => `<li><i class="fa-regular fa-star" style="color:var(--color-accent); margin-right:10px;"></i> ${ben}</li>`).join('');
-    const skillsBadges = opp.skills ? opp.skills.map(s => `<span class="badge-skill" style="background-color: var(--color-primary-light); color: var(--color-primary); font-size:11px; font-weight:700; padding:6px 12px; border-radius:50px; text-transform:uppercase;">${s}</span>`).join('') : '';
-
-    // Related Listings
-    const related = DataStore.getOpportunities()
-      .filter(o => o.category.toLowerCase() === opp.category.toLowerCase() && o.id !== opp.id)
-      .slice(0, 3);
-    const relatedGrid = related.map(o => this.cardTemplate(o)).join('');
-
-    return `
-  templateSinglePost(postId) {
-    const opp = DataStore.getOpportunities(true).find(o => o.id === postId);
-    if (!opp) {
-      return `
-        <div class="container text-center" style="padding:100px 24px;">
-          <i class="fa-solid fa-triangle-exclamation" style="font-size: 50px; color: var(--color-accent); margin-bottom: 20px;"></i>
-          <h2>Opportunity Not Found</h2>
-          <p>This posting may have expired, been archived, or deleted by the administrator.</p>
-          <a href="#opportunities" class="btn btn-primary" style="margin-top:20px;">Back to Directory</a>
-        </div>
-      `;
-    }
-
     const requirementsList = opp.requirements.map(req => `<li><i class="fa-regular fa-square-check"></i> ${req}</li>`).join('');
     const benefitsList = opp.benefits.map(ben => `<li><i class="fa-regular fa-star"></i> ${ben}</li>`).join('');
     const skillsBadges = opp.skills ? opp.skills.map(s => `<span class="badge-skill">${s}</span>`).join('') : '';
