@@ -3,25 +3,23 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // --- Initialize Application ---
   App.init();
 });
 
 const App = {
-  // App State
+  // Application State
   state: {
     opportunities: [],
     categories: [],
     theme: 'light',
     currentPage: 'home',
-    searchQuery: '',
-    selectedCategory: 'All',
-    sortBy: 'latest', // 'latest', 'deadline'
-    visibleLimit: 6, // for opportunities page pagination
-    homeVisibleLimit: 6 // for home page listings
+    visibleLimit: 6,         // limit for opportunities page pagination
+    homeVisibleLimit: 6,     // limit for home page listings
+    editingPostId: null,     // holds ID of post being edited, if any
+    activeDashboardTab: 'overview' // 'overview', 'posts', 'create', 'categories', 'subscribers', 'messages'
   },
 
-  // DOM Cache
+  // DOM Cache for static container items
   nodes: {
     content: document.getElementById('app-content'),
     navLinks: document.querySelectorAll('.nav-link'),
@@ -30,18 +28,14 @@ const App = {
     themeIcon: document.getElementById('theme-icon'),
     menuToggle: document.getElementById('menu-toggle'),
     navMenu: document.getElementById('nav-menu'),
-    floatingAddBtn: document.getElementById('floating-add-btn'),
-    modal: document.getElementById('add-post-modal'),
-    modalClose: document.getElementById('modal-close-btn'),
-    addForm: document.getElementById('add-opportunity-form'),
+    scrollTopBtn: document.getElementById('scroll-top-btn'),
     toast: document.getElementById('toast-alert'),
     toastMsg: document.getElementById('toast-message')
   },
 
   init() {
-    // Load state from local storage or mock database
-    this.state.opportunities = DataStore.getOpportunities();
-    this.state.categories = DataStore.getCategories();
+    // Load database and categories
+    this.refreshState();
     
     // Bind Event Listeners
     this.bindEvents();
@@ -49,15 +43,20 @@ const App = {
     // Set Theme
     this.initTheme();
 
-    // Trigger Initial Route
+    // Trigger Initial Routing
     this.router();
+  },
+
+  refreshState() {
+    this.state.opportunities = DataStore.getOpportunities(true); // load all, filter in render
+    this.state.categories = DataStore.getCategories();
   },
 
   bindEvents() {
     // Hash routing
     window.addEventListener('hashchange', () => this.router());
 
-    // Theme toggle
+    // Theme toggle button
     this.nodes.themeToggle.addEventListener('click', () => this.toggleTheme());
 
     // Mobile nav toggle
@@ -79,15 +78,19 @@ const App = {
       }
     });
 
-    // Modal triggers
-    this.nodes.floatingAddBtn.addEventListener('click', () => this.openModal());
-    this.nodes.modalClose.addEventListener('click', () => this.closeModal());
-    this.nodes.modal.addEventListener('click', (e) => {
-      if (e.target === this.nodes.modal) this.closeModal();
+    // Scroll to Top visibility toggle
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        this.nodes.scrollTopBtn.classList.add('visible');
+      } else {
+        this.nodes.scrollTopBtn.classList.remove('visible');
+      }
     });
 
-    // Submit new opportunity
-    this.nodes.addForm.addEventListener('submit', (e) => this.handleNewOpportunity(e));
+    // Scroll to Top action
+    this.nodes.scrollTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   },
 
   // --- Theme Management ---
@@ -116,16 +119,13 @@ const App = {
     localStorage.setItem('ath_theme', this.state.theme);
   },
 
-  // --- Modal Controllers ---
-  openModal() {
-    this.nodes.modal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Lock background scroll
-  },
-
-  closeModal() {
-    this.nodes.modal.classList.remove('active');
-    document.body.style.overflow = ''; // Unlock background scroll
-    this.nodes.addForm.reset();
+  // --- Toast Alert Helper ---
+  showToast(message, type = 'success') {
+    this.nodes.toastMsg.textContent = message;
+    this.nodes.toast.className = `alert-popup ${type} active`;
+    setTimeout(() => {
+      this.nodes.toast.classList.remove('active');
+    }, 4000);
   },
 
   // --- Router Engine ---
@@ -153,6 +153,7 @@ const App = {
       const postId = route.substring(6); // Extract ID
       this.state.currentPage = 'post-detail';
       this.updateNavbarActiveState('opportunities');
+      this.syncSEO('post-detail', { postId });
       this.renderView('post-detail', { postId });
       return;
     }
@@ -162,36 +163,27 @@ const App = {
     this.state.currentPage = pageName;
     this.updateNavbarActiveState(pageName);
 
-    // Route Mapping
-    switch (pageName) {
-      case 'home':
-        this.renderView('home');
-        break;
-      case 'opportunities':
-        this.renderView('opportunities', queryParams);
-        break;
-      case 'categories':
-        this.renderView('categories');
-        break;
-      case 'about':
-        this.renderView('about');
-        break;
-      case 'faq':
-        this.renderView('faq');
-        break;
-      case 'contact':
-        this.renderView('contact');
-        break;
-      case 'privacy':
-        this.renderView('privacy');
-        break;
-      case 'terms':
-        this.renderView('terms');
-        break;
-      default:
-        // Default to Home if route not found
-        window.location.hash = '#home';
+    // Route guards
+    if (pageName === 'admin-dashboard') {
+      if (sessionStorage.getItem('ath_admin_logged_in') !== 'true') {
+        window.location.hash = '#admin-login';
+        this.showToast('Authentication required to access the Admin Panel.', 'error');
+        return;
+      }
     }
+
+    if (pageName === 'admin-login') {
+      if (sessionStorage.getItem('ath_admin_logged_in') === 'true') {
+        window.location.hash = '#admin-dashboard';
+        return;
+      }
+    }
+
+    // Update SEO headers dynamically
+    this.syncSEO(pageName);
+
+    // Route Mapping
+    this.renderView(pageName, queryParams);
   },
 
   updateNavbarActiveState(pageName) {
@@ -204,88 +196,46 @@ const App = {
     });
   },
 
-  // --- Toast Alert Helper ---
-  showToast(message, type = 'success') {
-    this.nodes.toastMsg.textContent = message;
-    this.nodes.toast.className = `alert-popup ${type} active`;
-    setTimeout(() => {
-      this.nodes.toast.classList.remove('active');
-    }, 4000);
-  },
+  // --- Dynamic SEO synchronization ---
+  syncSEO(pageName, params = {}) {
+    const metaDesc = document.querySelector('meta[name="description"]');
+    let title = 'Afri Tech Hub | Opportunities Directory';
+    let desc = 'Empowering African innovators by curating jobs, grants, scholarships, and fellowships. Zero signup required.';
 
-  // --- New Opportunity Creation ---
-  handleNewOpportunity(e) {
-    e.preventDefault();
-    
-    const title = document.getElementById('opp-title').value.trim();
-    const company = document.getElementById('opp-company').value.trim();
-    const category = document.getElementById('opp-category').value;
-    const location = document.getElementById('opp-location').value.trim();
-    const deadline = document.getElementById('opp-deadline').value;
-    const shortDesc = document.getElementById('opp-short').value.trim();
-    const description = document.getElementById('opp-desc').value.trim();
-    const reqText = document.getElementById('opp-req').value.trim();
-    const benText = document.getElementById('opp-ben').value.trim();
-    const applyUrl = document.getElementById('opp-url').value.trim();
-    const imgFile = document.getElementById('opp-img-file').files[0];
-
-    const saveAndPublish = (imageSrc) => {
-      // Map requirements & benefits text lines to arrays
-      const requirements = reqText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      const benefits = benText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-
-      // Create unique ID slug
-      const slug = title.toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
-
-      // Date today
-      const today = new Date().toISOString().split('T')[0];
-
-      const newOpp = {
-        id: slug,
-        title,
-        company,
-        category,
-        location,
-        date: today,
-        deadline,
-        image: imageSrc,
-        shortDescription: shortDesc,
-        description,
-        requirements,
-        benefits,
-        applyUrl,
-        featured: false,
-        trending: false
-      };
-
-      // Save and update state
-      this.state.opportunities = DataStore.saveOpportunity(newOpp);
-      this.state.categories = DataStore.getCategories(); // Refresh counts
-
-      this.closeModal();
-      this.showToast('Opportunity published successfully! Added to listings.', 'success');
-
-      // Force re-render of current view if it is home or opportunities to reflect changes instantly
-      if (this.state.currentPage === 'home' || this.state.currentPage === 'opportunities') {
-        this.router();
+    if (pageName === 'home') {
+      title = 'Afri Tech Hub | Empowering African Entrepreneurs & Youth';
+      desc = 'Discover verified entry-level tech opportunities, grants, and scholarships across Africa. Access is completely open and free with no login required.';
+    } else if (pageName === 'opportunities') {
+      title = 'Browse Tech Opportunities & Funding | Afri Tech Hub';
+      desc = 'Search and filter active tech jobs, graduate trainee programmes, fully-funded scholarships, and startup grants.';
+    } else if (pageName === 'categories') {
+      title = 'Explore Opportunity Categories | Afri Tech Hub';
+      desc = 'Navigate tailored lists of fellowships, internships, business funding, and tech vacancies.';
+    } else if (pageName === 'about') {
+      title = 'About Us | Afri Tech Hub Mission & Team';
+      desc = 'Learn how Afri Tech Hub curates resource listings to support the next generation of African digital professionals.';
+    } else if (pageName === 'faq') {
+      title = 'Frequently Asked Questions | Afri Tech Hub';
+      desc = 'Find answers on opportunity verification, application processes, and joining the WhatsApp community.';
+    } else if (pageName === 'contact') {
+      title = 'Contact Support & Inquiry | Afri Tech Hub';
+      desc = 'Get in touch with Afri Tech Hub to share vacancy listings, submit feedback, or partner with us.';
+    } else if (pageName === 'admin-login') {
+      title = 'Admin Portal Authentication | Afri Tech Hub';
+      desc = 'Secure gateway for administrators to login and edit active database postings.';
+    } else if (pageName === 'admin-dashboard') {
+      title = 'Admin Panel Overview | Afri Tech Hub';
+      desc = 'Database management panel for Afri Tech Hub administrators.';
+    } else if (pageName === 'post-detail' && params.postId) {
+      const opp = DataStore.getOpportunities(true).find(o => o.id === params.postId);
+      if (opp) {
+        title = `${opp.title} at ${opp.company} | Afri Tech Hub`;
+        desc = opp.shortDescription;
       }
-    };
-
-    if (imgFile) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        saveAndPublish(event.target.result);
-      };
-      reader.onerror = (err) => {
-        console.error("FileReader error: ", err);
-        this.showToast('Failed to process image file.', 'error');
-      };
-      reader.readAsDataURL(imgFile);
-    } else {
-      saveAndPublish('');
     }
+
+    document.title = title;
+    if (metaDesc) metaDesc.setAttribute('content', desc);
   },
 
   // ==========================================================================
@@ -293,7 +243,6 @@ const App = {
   // ==========================================================================
   
   renderView(view, params = {}) {
-    // Show smooth skeleton transition before rendering content
     this.renderSkeleton();
 
     setTimeout(() => {
@@ -327,34 +276,37 @@ const App = {
         case 'post-detail':
           htmlContent = this.templateSinglePost(params.postId);
           break;
+        case 'admin-login':
+          htmlContent = this.templateAdminLogin();
+          break;
+        case 'admin-dashboard':
+          htmlContent = this.templateAdminDashboard(this.state.activeDashboardTab);
+          break;
+        default:
+          htmlContent = this.templateHome();
       }
       
       this.nodes.content.innerHTML = htmlContent;
-      
-      // Bind event listeners specific to the rendered view
       this.bindViewEvents(view, params);
-    }, 250); // Simulated network delay for premium feel
+    }, 200); // Premium brief transition delay
   },
 
   renderSkeleton() {
     this.nodes.content.innerHTML = `
       <div class="container animate-fade-in" style="padding-top: 60px; padding-bottom: 60px;">
-        <div class="skeleton-box" style="height: 40px; width: 300px; margin-bottom: 45px;"></div>
-        <div class="opportunities-grid">
+        <div class="skeleton-box" style="height: 40px; width: 300px; margin-bottom: 45px; background: #e2e8f0; border-radius: 8px;"></div>
+        <div class="opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
           ${Array(3).fill().map(() => `
-            <div class="opportunity-card skeleton-card">
-              <div class="card-header" style="flex-direction: column; gap: 15px;">
-                <div class="skeleton-box" style="height: 20px; width: 120px;"></div>
-                <div class="skeleton-box" style="height: 30px; width: 100%;"></div>
-              </div>
-              <div class="card-body">
-                <div class="skeleton-box" style="height: 15px; width: 100%; margin-bottom: 10px;"></div>
-                <div class="skeleton-box" style="height: 15px; width: 90%; margin-bottom: 10px;"></div>
-                <div class="skeleton-box" style="height: 15px; width: 75%;"></div>
-              </div>
-              <div class="card-footer">
-                <div class="skeleton-box" style="height: 15px; width: 80px;"></div>
-                <div class="skeleton-box" style="height: 35px; width: 100px; border-radius: 8px;"></div>
+            <div class="opportunity-card skeleton-card" style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              <div class="skeleton-box" style="height: 200px; width: 100%; background: #e2e8f0;"></div>
+              <div style="padding: 24px;">
+                <div class="skeleton-box" style="height: 15px; width: 100px; margin-bottom: 15px; background: #e2e8f0; border-radius: 4px;"></div>
+                <div class="skeleton-box" style="height: 25px; width: 100%; margin-bottom: 10px; background: #e2e8f0; border-radius: 4px;"></div>
+                <div class="skeleton-box" style="height: 15px; width: 75%; margin-bottom: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-box" style="height: 15px; width: 80px; background: #e2e8f0; border-radius: 4px;"></div>
+                  <div class="skeleton-box" style="height: 35px; width: 100px; background: #e2e8f0; border-radius: 8px;"></div>
+                </div>
               </div>
             </div>
           `).join('')}
@@ -365,7 +317,6 @@ const App = {
 
   bindViewEvents(view, params) {
     if (view === 'home') {
-      // Home Page Filters
       const searchInput = document.getElementById('home-search');
       const pills = document.querySelectorAll('.home-filter-pill');
       const cardsGrid = document.getElementById('home-opportunities-grid');
@@ -376,7 +327,7 @@ const App = {
         const activePill = document.querySelector('.home-filter-pill.active');
         const cat = activePill ? activePill.getAttribute('data-category') : 'All';
         
-        let filtered = this.state.opportunities;
+        let filtered = DataStore.getOpportunities();
         if (cat !== 'All') {
           filtered = filtered.filter(opp => opp.category.toLowerCase() === cat.toLowerCase());
         }
@@ -384,18 +335,18 @@ const App = {
           filtered = filtered.filter(opp => 
             opp.title.toLowerCase().includes(query) || 
             opp.company.toLowerCase().includes(query) || 
-            opp.shortDescription.toLowerCase().includes(query)
+            opp.shortDescription.toLowerCase().includes(query) ||
+            (opp.skills && opp.skills.some(s => s.toLowerCase().includes(query)))
           );
         }
 
-        // Render matching cards
         const subset = filtered.slice(0, this.state.homeVisibleLimit);
         if (subset.length === 0) {
           cardsGrid.innerHTML = `
-            <div class="no-results">
-              <i class="fa-solid fa-magnifying-glass"></i>
+            <div class="no-results" style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
+              <i class="fa-solid fa-magnifying-glass" style="font-size: 40px; color: var(--text-muted); margin-bottom: 15px;"></i>
               <h3>No Opportunities Found</h3>
-              <p>We couldn't find matches for your search. Try adjusting the query or check another category.</p>
+              <p>Try modifying your keywords or exploring another category tab.</p>
             </div>
           `;
         } else {
@@ -414,85 +365,102 @@ const App = {
       searchInput.addEventListener('input', filterHomeListings);
       searchBtn.addEventListener('click', filterHomeListings);
 
-      // FAQ accordions
+      // Accordions
       const faqItems = document.querySelectorAll('.faq-item');
       faqItems.forEach(item => {
         const btn = item.querySelector('.faq-question-btn');
         btn.addEventListener('click', () => {
           const isActive = item.classList.contains('active');
-          // Collapse other active ones
           faqItems.forEach(i => i.classList.remove('active'));
           if (!isActive) item.classList.add('active');
         });
       });
 
-      // Newsletter signup form
+      // Newsletter
       const newsletterForm = document.getElementById('home-newsletter-form');
       newsletterForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = newsletterForm.querySelector('input').value.trim();
         if (email) {
-          this.showToast(`Thank you! ${email} has been subscribed to updates.`, 'success');
+          const added = DataStore.addSubscriber(email);
+          if (added) {
+            this.showToast('Thank you! You have been successfully subscribed to newsletter updates.', 'success');
+          } else {
+            this.showToast('You are already subscribed to the newsletter!', 'info');
+          }
           newsletterForm.reset();
         }
       });
     }
 
     if (view === 'opportunities') {
-      // Opportunities Browser Page
       const searchInput = document.getElementById('opp-search');
       const categorySelect = document.getElementById('opp-cat-filter');
+      const countrySelect = document.getElementById('opp-country-filter');
+      const remoteSelect = document.getElementById('opp-remote-filter');
+      const experienceSelect = document.getElementById('opp-exp-filter');
       const sortSelect = document.getElementById('opp-sort');
       const cardsGrid = document.getElementById('opp-grid');
       const loadMoreBtn = document.getElementById('load-more-btn');
 
-      // Check pre-filled query params
+      // Sync route query parameters
       if (params.category) {
-        categorySelect.value = params.category.charAt(0).toUpperCase() + params.category.slice(1);
-      }
-      if (params.search) {
-        searchInput.value = params.search;
+        categorySelect.value = params.category;
       }
 
       const updateList = () => {
         const query = searchInput.value.trim().toLowerCase();
         const cat = categorySelect.value;
+        const country = countrySelect.value;
+        const remote = remoteSelect.value;
+        const exp = experienceSelect.value;
         const sort = sortSelect.value;
 
-        let filtered = [...this.state.opportunities];
+        let filtered = DataStore.getOpportunities();
 
-        // Apply category filter
         if (cat !== 'All') {
           filtered = filtered.filter(opp => opp.category.toLowerCase() === cat.toLowerCase());
         }
-
-        // Apply search query
+        if (country !== 'All') {
+          filtered = filtered.filter(opp => opp.country && opp.country.toLowerCase() === country.toLowerCase());
+        }
+        if (remote !== 'All') {
+          filtered = filtered.filter(opp => opp.remote && opp.remote.toLowerCase() === remote.toLowerCase());
+        }
+        if (exp !== 'All') {
+          filtered = filtered.filter(opp => opp.experienceLevel && opp.experienceLevel.toLowerCase() === exp.toLowerCase());
+        }
         if (query) {
           filtered = filtered.filter(opp => 
             opp.title.toLowerCase().includes(query) || 
             opp.company.toLowerCase().includes(query) || 
-            opp.shortDescription.toLowerCase().includes(query) || 
-            opp.location.toLowerCase().includes(query)
+            opp.shortDescription.toLowerCase().includes(query) ||
+            opp.location.toLowerCase().includes(query) ||
+            (opp.skills && opp.skills.some(s => s.toLowerCase().includes(query)))
           );
         }
 
-        // Apply sorting
+        // Apply Sorting
         if (sort === 'latest') {
           filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
         } else if (sort === 'deadline') {
-          filtered.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+          filtered.sort((a, b) => {
+            // Put 'Rolling' deadlines at the end
+            if (a.deadline === 'Rolling') return 1;
+            if (b.deadline === 'Rolling') return -1;
+            return new Date(a.deadline) - new Date(b.deadline);
+          });
         }
 
-        // Handle load more
         const totalMatching = filtered.length;
         const subset = filtered.slice(0, this.state.visibleLimit);
 
         if (subset.length === 0) {
           cardsGrid.innerHTML = `
-            <div class="no-results">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <h3>No opportunities match your filter</h3>
-              <p>Try clearing the search query or selecting a different category.</p>
+            <div class="no-results" style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
+              <i class="fa-solid fa-magnifying-glass" style="font-size: 40px; color: var(--text-muted); margin-bottom: 15px;"></i>
+              <h3>No matching opportunities found</h3>
+              <p>Try broadening your filter criteria or search terms.</p>
             </div>
           `;
           if (loadMoreBtn) loadMoreBtn.style.display = 'none';
@@ -511,6 +479,9 @@ const App = {
 
       searchInput.addEventListener('input', updateList);
       categorySelect.addEventListener('change', updateList);
+      countrySelect.addEventListener('change', updateList);
+      remoteSelect.addEventListener('change', updateList);
+      experienceSelect.addEventListener('change', updateList);
       sortSelect.addEventListener('change', updateList);
 
       if (loadMoreBtn) {
@@ -520,858 +491,1559 @@ const App = {
         });
       }
 
-      // Initial run
-      updateList();
-    }
-
-    if (view === 'faq') {
-      // FAQ page accordions
-      const faqItems = document.querySelectorAll('.faq-item');
-      faqItems.forEach(item => {
-        const btn = item.querySelector('.faq-question-btn');
-        btn.addEventListener('click', () => {
-          const isActive = item.classList.contains('active');
-          faqItems.forEach(i => i.classList.remove('active'));
-          if (!isActive) item.classList.add('active');
-        });
-      });
-
-      // FAQ search filter
-      const faqSearch = document.getElementById('faq-search');
-      const faqResults = document.getElementById('faq-results');
-      const faqData = DataStore.getFaqs();
-
-      faqSearch.addEventListener('input', () => {
-        const query = faqSearch.value.trim().toLowerCase();
-        
-        const filtered = faqData.filter(faq => 
-          faq.question.toLowerCase().includes(query) || 
-          faq.answer.toLowerCase().includes(query)
-        );
-
-        if (filtered.length === 0) {
-          faqResults.innerHTML = `
-            <div class="no-results">
-              <i class="fa-solid fa-question-circle"></i>
-              <h3>No FAQs Found</h3>
-              <p>We couldn't find any FAQs matching your query.</p>
-            </div>
-          `;
-        } else {
-          faqResults.innerHTML = filtered.map((faq, idx) => `
-            <div class="faq-item">
-              <button class="faq-question-btn">
-                <span>${faq.question}</span>
-                <div class="faq-icon-box">
-                  <i class="fa-solid fa-chevron-down"></i>
-                </div>
-              </button>
-              <div class="faq-answer-wrapper">
-                <div class="faq-answer">
-                  <p>${faq.answer}</p>
-                </div>
-              </div>
-            </div>
-          `).join('');
-
-          // Re-bind click listeners
-          const newItems = faqResults.querySelectorAll('.faq-item');
-          newItems.forEach(item => {
-            const btn = item.querySelector('.faq-question-btn');
-            btn.addEventListener('click', () => {
-              const isActive = item.classList.contains('active');
-              newItems.forEach(i => i.classList.remove('active'));
-              if (!isActive) item.classList.add('active');
-            });
-          });
-        }
-      });
+      updateList(); // Run filters initially
     }
 
     if (view === 'contact') {
-      const contactForm = document.getElementById('ath-contact-form');
+      const contactForm = document.getElementById('contact-form');
       contactForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('c-name').value.trim();
-        const email = document.getElementById('c-email').value.trim();
-        const subject = document.getElementById('c-subject').value.trim();
-        const msg = document.getElementById('c-msg').value.trim();
+        const name = document.getElementById('contact-name').value.trim();
+        const email = document.getElementById('contact-email').value.trim();
+        const subject = document.getElementById('contact-subject').value.trim();
+        const body = document.getElementById('contact-message').value.trim();
 
-        if (name && email && subject && msg) {
-          this.showToast(`Thank you, ${name}! Your inquiry has been sent. We'll reply within 24 hours.`, 'success');
+        if (name && email && subject && body) {
+          DataStore.addContactMessage({ name, email, subject, body });
+          this.showToast('Your message has been submitted. We will review and respond shortly!', 'success');
           contactForm.reset();
         }
       });
     }
 
     if (view === 'post-detail') {
-      // Setup dynamic back button behavior
-      const backBtn = document.getElementById('post-back-btn');
-      if (backBtn) {
-        backBtn.addEventListener('click', (e) => {
+      // Dynamic share buttons logic
+      const copyLinkBtn = document.getElementById('share-copy-link');
+      if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          if (document.referrer && window.location.hash.includes('post/')) {
-            window.history.back();
-          } else {
-            window.location.hash = '#opportunities';
-          }
-        });
-      }
-
-      // Share links setup
-      const copyBtn = document.getElementById('share-copy');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          navigator.clipboard.writeText(window.location.href).then(() => {
-            this.showToast('Opportunity link copied to clipboard!', 'success');
-          }).catch(err => {
-            console.error('Failed to copy text: ', err);
-          });
+          navigator.clipboard.writeText(window.location.href)
+            .then(() => this.showToast('Link copied to clipboard!', 'success'))
+            .catch(() => this.showToast('Failed to copy link.', 'error'));
         });
       }
     }
+
+    if (view === 'admin-login') {
+      const loginForm = document.getElementById('admin-login-form');
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = document.getElementById('admin-username').value.trim();
+        const pass = document.getElementById('admin-password').value.trim();
+
+        // Standard auth validation credentials
+        if (user === 'admin' && pass === 'adminpassword') {
+          sessionStorage.setItem('ath_admin_logged_in', 'true');
+          this.state.activeDashboardTab = 'overview';
+          window.location.hash = '#admin-dashboard';
+          this.showToast('Logged in successfully. Welcome to the Admin Panel!', 'success');
+        } else {
+          this.showToast('Invalid administrator username or password.', 'error');
+        }
+      });
+    }
+
+    if (view === 'admin-dashboard') {
+      // Logout button
+      const logoutBtn = document.getElementById('admin-logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          sessionStorage.removeItem('ath_admin_logged_in');
+          this.showToast('Logged out of Admin Portal.', 'info');
+          window.location.hash = '#home';
+        });
+      }
+
+      // Sidebar tab selectors
+      const tabBtns = document.querySelectorAll('.dashboard-tab-btn');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.getAttribute('data-tab');
+          this.state.activeDashboardTab = tab;
+          
+          // Clear edit mode state if navigating away from create/edit tab
+          if (tab !== 'create') {
+            this.state.editingPostId = null;
+          }
+
+          this.renderView('admin-dashboard');
+        });
+      });
+
+      // Bind dynamic view controller event listeners based on active tab
+      this.bindDashboardTabEvents(this.state.activeDashboardTab);
+    }
+  },
+
+  bindDashboardTabEvents(tab) {
+    const viewport = document.getElementById('dashboard-viewport');
+    this.refreshState();
+
+    if (tab === 'posts') {
+      const search = document.getElementById('admin-post-search');
+      const tableBody = document.getElementById('admin-post-table-body');
+      
+      const filterTable = () => {
+        const query = search.value.trim().toLowerCase();
+        let filtered = DataStore.getOpportunities(true);
+        if (query) {
+          filtered = filtered.filter(o => 
+            o.title.toLowerCase().includes(query) ||
+            o.company.toLowerCase().includes(query) ||
+            o.category.toLowerCase().includes(query)
+          );
+        }
+
+        tableBody.innerHTML = filtered.map(opp => `
+          <tr>
+            <td>
+              <div class="admin-table-title">${opp.title}</div>
+              <div class="admin-table-company">${opp.company}</div>
+            </td>
+            <td>${opp.category}</td>
+            <td>${opp.deadline}</td>
+            <td>
+              <span class="badge-status ${opp.status || 'published'}">${opp.status || 'published'}</span>
+            </td>
+            <td>
+              <button class="btn btn-feature ${opp.featured ? 'active' : ''} btn-sm btn-feat-toggle" data-id="${opp.id}">
+                <i class="fa-solid fa-star"></i> ${opp.featured ? 'Featured' : 'Standard'}
+              </button>
+            </td>
+            <td>
+              <div class="admin-table-actions">
+                <button class="btn btn-edit btn-sm btn-opp-edit" data-id="${opp.id}"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                <button class="btn btn-delete btn-sm btn-opp-delete" data-id="${opp.id}"><i class="fa-solid fa-trash-can"></i> Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        // Re-bind actions
+        this.bindTableActionListeners();
+      };
+
+      search.addEventListener('input', filterTable);
+      filterTable(); // Run initial listing
+    }
+
+    if (tab === 'create') {
+      const form = document.getElementById('admin-opp-form');
+      const fileInput = document.getElementById('adm-opp-img-file');
+      const textUrlInput = document.getElementById('adm-opp-img-url');
+      const filePreview = document.getElementById('adm-img-preview');
+      const skillsInput = document.getElementById('adm-opp-skills');
+      const skillsContainer = document.getElementById('adm-skills-tags');
+
+      let currentSkills = [];
+
+      // Edit Mode Preloading
+      if (this.state.editingPostId) {
+        const opp = this.state.opportunities.find(o => o.id === this.state.editingPostId);
+        if (opp) {
+          document.getElementById('adm-opp-title').value = opp.title;
+          document.getElementById('adm-opp-company').value = opp.company;
+          document.getElementById('adm-opp-category').value = opp.category;
+          document.getElementById('adm-opp-experience').value = opp.experienceLevel || 'Graduate';
+          document.getElementById('adm-opp-remote').value = opp.remote || 'Onsite';
+          document.getElementById('adm-opp-country').value = opp.country || '';
+          document.getElementById('adm-opp-location').value = opp.location;
+          document.getElementById('adm-opp-deadline').value = opp.deadline;
+          document.getElementById('adm-opp-short').value = opp.shortDescription;
+          document.getElementById('adm-opp-desc').value = opp.description;
+          document.getElementById('adm-opp-req').value = opp.requirements.join('\n');
+          document.getElementById('adm-opp-ben').value = opp.benefits.join('\n');
+          document.getElementById('adm-opp-url').value = opp.applyUrl;
+          document.getElementById('adm-opp-status').value = opp.status || 'published';
+          document.getElementById('adm-opp-featured').checked = opp.featured || false;
+          
+          if (opp.image && !opp.image.startsWith('https://images.unsplash.com')) {
+            filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
+          } else if (opp.image) {
+            textUrlInput.value = opp.image;
+            filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
+          }
+
+          if (opp.skills) {
+            currentSkills = [...opp.skills];
+            this.renderSkillsTags(currentSkills, skillsContainer);
+          }
+        }
+      }
+
+      // Handle Skills comma trigger
+      skillsInput.addEventListener('keydown', (e) => {
+        if (e.key === ',' || e.key === 'Enter') {
+          e.preventDefault();
+          const val = skillsInput.value.trim().replace(/,/g, '');
+          if (val && !currentSkills.includes(val)) {
+            currentSkills.push(val);
+            this.renderSkillsTags(currentSkills, skillsContainer);
+          }
+          skillsInput.value = '';
+        }
+      });
+
+      // Handle Image File Preloading Preview
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            filePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Handle Image URL input sync preview
+      textUrlInput.addEventListener('input', () => {
+        const val = textUrlInput.value.trim();
+        if (val) {
+          filePreview.innerHTML = `<img src="${val}" alt="Preview">`;
+        }
+      });
+
+      // Form Submit CRUD
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const title = document.getElementById('adm-opp-title').value.trim();
+        const company = document.getElementById('adm-opp-company').value.trim();
+        const category = document.getElementById('adm-opp-category').value;
+        const exp = document.getElementById('adm-opp-experience').value;
+        const remote = document.getElementById('adm-opp-remote').value;
+        const country = document.getElementById('adm-opp-country').value.trim();
+        const location = document.getElementById('adm-opp-location').value.trim();
+        const deadline = document.getElementById('adm-opp-deadline').value;
+        const shortDesc = document.getElementById('adm-opp-short').value.trim();
+        const description = document.getElementById('adm-opp-desc').value.trim();
+        const reqText = document.getElementById('adm-opp-req').value.trim();
+        const benText = document.getElementById('adm-opp-ben').value.trim();
+        const applyUrl = document.getElementById('adm-opp-url').value.trim();
+        const status = document.getElementById('adm-opp-status').value;
+        const featured = document.getElementById('adm-opp-featured').checked;
+        const file = fileInput.files[0];
+        const textUrl = textUrlInput.value.trim();
+
+        const savePost = (imgData) => {
+          const requirements = reqText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          const benefits = benText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          
+          let id = this.state.editingPostId;
+          if (!id) {
+            id = title.toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
+          }
+
+          const targetPost = {
+            id,
+            title,
+            company,
+            category,
+            experienceLevel: exp,
+            remote,
+            country: country || 'Global',
+            location,
+            date: this.state.editingPostId ? this.state.opportunities.find(o => o.id === id).date : new Date().toISOString().split('T')[0],
+            deadline,
+            image: imgData || textUrl || '',
+            shortDescription: shortDesc,
+            description,
+            requirements,
+            benefits,
+            skills: currentSkills,
+            applyUrl,
+            featured,
+            trending: this.state.editingPostId ? this.state.opportunities.find(o => o.id === id).trending : false,
+            status
+          };
+
+          DataStore.saveOpportunity(targetPost);
+          this.refreshState();
+          
+          this.state.editingPostId = null;
+          this.state.activeDashboardTab = 'posts';
+          this.renderView('admin-dashboard');
+          
+          this.showToast('Opportunity saved successfully!', 'success');
+        };
+
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => savePost(ev.target.result);
+          reader.readAsDataURL(file);
+        } else {
+          // If editing and no image is uploaded/inserted, preserve existing
+          let existingImg = '';
+          if (this.state.editingPostId) {
+            const current = this.state.opportunities.find(o => o.id === this.state.editingPostId);
+            if (current) existingImg = current.image;
+          }
+          savePost(existingImg);
+        }
+      });
+    }
+
+    if (tab === 'categories') {
+      const form = document.getElementById('admin-cat-form');
+      const listContainer = document.getElementById('admin-categories-editor-list');
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('adm-cat-name').value.trim();
+        const icon = document.getElementById('adm-cat-icon').value.trim();
+        const desc = document.getElementById('adm-cat-desc').value.trim();
+
+        if (name && icon && desc) {
+          DataStore.saveCategory({ name, icon, count: 0, description: desc });
+          this.refreshState();
+          form.reset();
+          this.showToast('Category created successfully.', 'success');
+          this.renderView('admin-dashboard');
+        }
+      });
+
+      // Delete listener
+      listContainer.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.btn-cat-delete');
+        if (delBtn) {
+          const name = delBtn.getAttribute('data-name');
+          if (confirm(`Are you sure you want to delete the "${name}" category? Posts under this category will remain, but counts will be removed.`)) {
+            DataStore.deleteCategory(name);
+            this.refreshState();
+            this.showToast(`Category "${name}" deleted.`, 'info');
+            this.renderView('admin-dashboard');
+          }
+        }
+      });
+    }
+
+    if (tab === 'subscribers') {
+      const copyBtn = document.getElementById('admin-sub-copy');
+      const listContainer = document.getElementById('admin-subscribers-list');
+
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          const emails = DataStore.getSubscribers();
+          if (emails.length === 0) {
+            this.showToast('No subscribers to copy.', 'error');
+            return;
+          }
+          navigator.clipboard.writeText(emails.join(', '))
+            .then(() => this.showToast('All subscriber emails copied to clipboard!', 'success'));
+        });
+      }
+
+      listContainer.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.btn-sub-delete');
+        if (delBtn) {
+          const email = delBtn.getAttribute('data-email');
+          if (confirm(`Remove ${email} from subscribers list?`)) {
+            DataStore.deleteSubscriber(email);
+            this.showToast(`${email} removed.`, 'info');
+            this.renderView('admin-dashboard');
+          }
+        }
+      });
+    }
+
+    if (tab === 'messages') {
+      const listContainer = document.getElementById('admin-messages-list');
+      
+      listContainer.addEventListener('click', (e) => {
+        const replyToggle = e.target.closest('.btn-msg-reply');
+        const deleteBtn = e.target.closest('.btn-msg-delete');
+
+        if (replyToggle) {
+          const id = replyToggle.getAttribute('data-id');
+          DataStore.toggleReplyMessage(id);
+          this.renderView('admin-dashboard');
+        }
+
+        if (deleteBtn) {
+          const id = deleteBtn.getAttribute('data-id');
+          if (confirm('Delete this message permanently?')) {
+            DataStore.deleteMessage(id);
+            this.showToast('Inquiry message deleted.', 'info');
+            this.renderView('admin-dashboard');
+          }
+        }
+      });
+    }
+  },
+
+  renderSkillsTags(skills, container) {
+    container.innerHTML = skills.map(skill => `
+      <span class="skill-tag">
+        ${skill}
+        <button type="button" class="btn-skill-remove" data-val="${skill}"><i class="fa-solid fa-xmark"></i></button>
+      </span>
+    `).join('');
+
+    // Bind remove button clicks
+    container.querySelectorAll('.btn-skill-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const skill = btn.getAttribute('data-val');
+        const index = skills.indexOf(skill);
+        if (index > -1) {
+          skills.splice(index, 1);
+          this.renderSkillsTags(skills, container);
+        }
+      });
+    });
+  },
+
+  bindTableActionListeners() {
+    const tableBody = document.getElementById('admin-post-table-body');
+    
+    // Toggle Featured Status
+    tableBody.querySelectorAll('.btn-feat-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const opp = this.state.opportunities.find(o => o.id === id);
+        if (opp) {
+          opp.featured = !opp.featured;
+          DataStore.saveOpportunity(opp);
+          this.refreshState();
+          this.showToast(`Opportunity featured status updated.`, 'success');
+          this.renderView('admin-dashboard');
+        }
+      });
+    });
+
+    // Delete Opportunity
+    tableBody.querySelectorAll('.btn-opp-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this opportunity posting permanently?')) {
+          DataStore.deleteOpportunity(id);
+          this.refreshState();
+          this.showToast('Opportunity deleted.', 'info');
+          this.renderView('admin-dashboard');
+        }
+      });
+    });
+
+    // Edit Opportunity
+    tableBody.querySelectorAll('.btn-opp-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        this.state.editingPostId = id;
+        this.state.activeDashboardTab = 'create';
+        this.renderView('admin-dashboard');
+      });
+    });
   },
 
   // ==========================================================================
-  // VIEW TEMPLATE LITERALS
+  // VIEW TEMPLATES LITERALS
   // ==========================================================================
 
-  // Opportunity Card HTML Generator
   cardTemplate(opp) {
-    const iconClass = opp.category.toLowerCase().replace(' ', '-');
-    const displayDate = this.formatDate(opp.date);
-    const deadlineDate = this.formatDate(opp.deadline);
+    const formattedDeadline = opp.deadline === 'Rolling' ? 'Rolling Admission' : `Ends: ${opp.deadline}`;
+    const skillsBadges = opp.skills ? opp.skills.slice(0, 3).map(s => `<span class="card-skill-badge" style="font-size:10px; background:var(--bg-tertiary); padding:2px 8px; border-radius:50px; color:var(--text-secondary); font-weight:600;">${s}</span>`).join('') : '';
 
     return `
       <article class="opportunity-card animate-fade-in-up">
-        <div class="card-image-container">
-          <img src="${opp.image}" alt="${opp.title}">
-          <span class="category-tag category-${iconClass} card-badge-floating">${opp.category}</span>
-        </div>
-        <div class="card-header">
-          <div class="company-badge">
-            <div class="company-logo-placeholder">
-              ${opp.company.charAt(0)}
-            </div>
-            <span>${opp.company}</span>
-          </div>
+        <div class="card-image-wrapper">
+          <img src="${opp.image}" alt="${opp.company} Cover" loading="lazy">
+          <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
+          ${opp.remote ? `<span class="remote-badge" style="position:absolute; top:15px; left:15px; background:rgba(15,23,42,0.85); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:50px; backdrop-filter:blur(4px); text-transform:uppercase;">${opp.remote}</span>` : ''}
         </div>
         <div class="card-body">
-          <h3 class="card-title">${opp.title}</h3>
-          <p class="card-desc">${opp.shortDescription}</p>
           <div class="card-meta">
-            <div class="meta-item">
-              <i class="fa-solid fa-location-dot"></i>
-              <span>${opp.location}</span>
-            </div>
-            <div class="meta-item">
-              <i class="fa-solid fa-calendar-times"></i>
-              <span>Deadline: ${deadlineDate}</span>
-            </div>
+            <span class="company-name"><i class="fa-solid fa-building"></i> ${opp.company}</span>
+            <span class="location"><i class="fa-solid fa-location-dot"></i> ${opp.location}</span>
+          </div>
+          <h3 class="card-title">${opp.title}</h3>
+          <p class="card-description">${opp.shortDescription}</p>
+          <div class="card-skills-strip" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; margin-bottom:12px;">
+            ${skillsBadges}
           </div>
         </div>
         <div class="card-footer">
-          <span class="date">Posted: ${displayDate}</span>
-          <a href="#post/${opp.id}" class="btn btn-primary btn-sm">
-            Read More <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
-          </a>
+          <span class="deadline-timer"><i class="fa-solid fa-clock-rotate-left"></i> ${formattedDeadline}</span>
+          <a href="#post/${opp.id}" class="btn btn-outline btn-sm">Read More <i class="fa-solid fa-arrow-right"></i></a>
         </div>
       </article>
     `;
   },
 
-  formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', options);
-  },
-
-  // --- View: HOME ---
   templateHome() {
-    const featuredOpp = this.state.opportunities.find(o => o.featured) || this.state.opportunities[0];
-    const trendingOpps = this.state.opportunities.filter(o => o.trending).slice(0, 4);
-    const latestOpps = this.state.opportunities.slice(0, this.state.homeVisibleLimit);
+    // Split opportunities into categories
+    const featuredOpps = this.state.opportunities.filter(opp => opp.featured && (opp.status === 'published' || !opp.status)).slice(0, 3);
+    const latestOpps = this.state.opportunities.filter(opp => opp.status === 'published' || !opp.status).slice(0, 6);
+
+    const categoriesGrid = this.state.categories.slice(0, 6).map(cat => `
+      <a href="#opportunities?category=${encodeURIComponent(cat.name)}" class="category-card animate-fade-in-up">
+        <div class="category-icon">
+          <i class="fa-solid fa-${cat.icon}"></i>
+        </div>
+        <h3 class="category-title">${cat.name}</h3>
+        <p class="category-desc">${cat.description}</p>
+        <span class="category-count">${cat.count} listings</span>
+      </a>
+    `).join('');
 
     return `
       <!-- Hero Section -->
       <section class="hero-section">
         <div class="container hero-grid">
-          <div class="hero-text">
-            <div class="hero-tag">
-              <i class="fa-solid fa-fire"></i> Shared 2,500+ Active Opportunities
+          <div class="hero-content">
+            <div class="hero-tag-badge animate-fade-in-up">
+              <i class="fa-solid fa-certificate" style="color: var(--color-accent);"></i> No Signups, No Accounts. 100% Free & Open Access
             </div>
-            <h1 class="hero-title">
-              Empowering the Next Generation of <span>African Entrepreneurs</span>
+            <h1 class="hero-title animate-fade-in-up" style="animation-delay: 0.1s;">
+              Accelerating African <span class="highlight">Success</span>.
             </h1>
-            <p class="hero-subtitle">
-              Discover fully-funded grants, scholarships, local and remote jobs, vacancies, internships, and seed funding. Completely open-access. No login, no registration, no hidden fees.
+            <p class="hero-subtitle animate-fade-in-up" style="animation-delay: 0.2s;">
+              Find curated scholarships, startup grants, internships, and remote developer jobs designed specifically for African youth and tech talent.
             </p>
-            <div class="hero-ctas">
-              <a href="#opportunities" class="btn btn-primary">
-                Explore Opportunities <i class="fa-solid fa-compass" style="margin-left: 8px;"></i>
-              </a>
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener" class="btn btn-secondary">
-                Join Telegram / WhatsApp <i class="fa-brands fa-whatsapp" style="margin-left: 8px; color: #25d366;"></i>
-              </a>
+            
+            <!-- Quick Search Bar -->
+            <div class="hero-search-container animate-fade-in-up" style="animation-delay: 0.3s;">
+              <div class="filter-search-wrapper" style="width: 100%;">
+                <i class="fa-solid fa-magnifying-glass" style="left: 20px;"></i>
+                <input type="text" id="home-search" class="admin-form-control" style="border-radius: 50px; padding: 18px 24px 18px 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);" placeholder="Search by roles, skills, or companies...">
+              </div>
+              <button class="btn btn-primary" id="home-search-btn" style="border-radius: 50px; padding: 14px 30px;">Search</button>
+            </div>
+
+            <!-- Call to Actions -->
+            <div class="hero-ctas animate-fade-in-up" style="animation-delay: 0.4s; margin-top:30px;">
+              <a href="#opportunities" class="btn btn-primary">Browse All Opportunities <i class="fa-solid fa-circle-chevron-right" style="margin-left: 8px;"></i></a>
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: #25d366; color: #25d366;"><i class="fa-brands fa-whatsapp" style="margin-right: 8px; font-size:1.25em;"></i> Join WhatsApp Hub</a>
             </div>
           </div>
-          <div class="hero-visual">
-            <div class="hero-illustration-bg"></div>
-            <div class="hero-glass-card">
-              <div class="icon">
-                <i class="fa-solid fa-rocket"></i>
+          
+          <div class="hero-visual animate-fade-in-up" style="animation-delay: 0.2s;">
+            <!-- Floating Cards or Vector Elements -->
+            <div class="visual-card main-visual-card">
+              <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80" alt="African Developers working together" style="width:100%; height:100%; object-fit:cover; border-radius: 24px;">
+              <div class="floating-badge badge-top-right">
+                <i class="fa-solid fa-briefcase"></i> 50+ New Jobs
               </div>
-              <h3>Afri Tech Hub</h3>
-              <p>Connecting African talent to regional & global empowerment funds.</p>
-              
-              <div class="hero-stats-row">
-                <div class="stat-item">
-                  <div class="stat-number">54</div>
-                  <div class="stat-label">Countries</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-number">15K+</div>
-                  <div class="stat-label">Members</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-number">Zero</div>
-                  <div class="stat-label">Fees</div>
-                </div>
+              <div class="floating-badge badge-bottom-left">
+                <i class="fa-solid fa-hand-holding-dollar"></i> $250k+ Grants
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Featured Banner Section -->
-      ${featuredOpp ? `
-      <section class="featured-section container">
-        <div class="featured-banner">
-          <div class="featured-content">
-            <h4>Featured Opportunity</h4>
-            <h2>${featuredOpp.title}</h2>
-            <p>${featuredOpp.shortDescription}</p>
-            <div class="featured-meta">
-              <div class="featured-meta-item">
-                <i class="fa-solid fa-building"></i>
-                <span>${featuredOpp.company}</span>
-              </div>
-              <div class="featured-meta-item">
-                <i class="fa-solid fa-location-dot"></i>
-                <span>${featuredOpp.location}</span>
-              </div>
-              <div class="featured-meta-item">
-                <i class="fa-solid fa-hourglass-half"></i>
-                <span>Deadline: ${this.formatDate(featuredOpp.deadline)}</span>
-              </div>
-            </div>
-            <a href="#post/${featuredOpp.id}" class="btn btn-accent">
-              View Opportunity Details <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
-            </a>
+      <!-- Quick Filter Pills section -->
+      <section class="section" style="padding-top:0px; padding-bottom: 20px;">
+        <div class="container" style="display:flex; justify-content:center;">
+          <div class="home-filter-pills" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+            <button class="home-filter-pill active" data-category="All">All Feed</button>
+            <button class="home-filter-pill" data-category="Jobs">Jobs</button>
+            <button class="home-filter-pill" data-category="Internships">Internships</button>
+            <button class="home-filter-pill" data-category="Grants">Grants</button>
+            <button class="home-filter-pill" data-category="Scholarships">Scholarships</button>
           </div>
-          <div class="featured-visual-placeholder" style="display: flex; justify-content: center; align-items: center;">
-            <div style="background-color: rgba(255, 255, 255, 0.05); padding: 40px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.15);">
-              <i class="fa-solid fa-award" style="font-size: 100px; color: var(--color-accent); text-shadow: 0 0 20px rgba(245,158,11,0.5);"></i>
-            </div>
+        </div>
+      </section>
+
+      <!-- Featured Opportunities Section -->
+      ${featuredOpps.length > 0 ? `
+      <section class="section" style="background-color: var(--bg-tertiary); transition: background-color var(--transition-normal);">
+        <div class="container">
+          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
+            <span class="subheading" style="color: var(--color-accent); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;"><i class="fa-solid fa-star"></i> Featured Listings</span>
+            <h2>Top Pick Opportunities</h2>
+            <p>Hand-picked opportunities offering top benefits, fully-funded packages, or global internships.</p>
+          </div>
+          <div class="opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+            ${featuredOpps.map(opp => this.cardTemplate(opp)).join('')}
           </div>
         </div>
       </section>
       ` : ''}
 
-      <!-- Popular Categories Grid -->
-      <section class="container" style="padding-top: 40px; padding-bottom: 80px;">
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">Popular Categories</h2>
-            <p class="section-subtitle">Browse curated programs based on your career or business objectives.</p>
-          </div>
-          <a href="#categories" class="btn btn-secondary btn-sm">All Categories <i class="fa-solid fa-grid-2" style="margin-left: 6px;"></i></a>
-        </div>
-        <div class="categories-grid">
-          ${this.state.categories.slice(0, 3).map(cat => `
-            <div class="category-card" onclick="window.location.hash='#opportunities?category=${cat.name}'">
-              <div class="category-icon-box">
-                <i class="fa-solid fa-${cat.icon}"></i>
-              </div>
-              <h3 class="category-name">${cat.name}</h3>
-              <p class="category-desc">${cat.description}</p>
-              <div class="category-count">${cat.count} Active Postings</div>
-            </div>
-          `).join('')}
-        </div>
-      </section>
-
-      <!-- Trending Section -->
-      ${trendingOpps.length > 0 ? `
-      <section class="container" style="padding-bottom: 80px;">
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">Trending Opportunities</h2>
-            <p class="section-subtitle">Highly sought-after programs closing soon. Apply early to stand out.</p>
-          </div>
-        </div>
-        <div class="opportunities-grid">
-          ${trendingOpps.map(opp => this.cardTemplate(opp)).join('')}
-        </div>
-      </section>
-      ` : ''}
-
-      <!-- Main Directory / Browser (Search & Categories Pills) -->
-      <section class="browser-section">
+      <!-- Latest Opportunities Section -->
+      <section class="section">
         <div class="container">
           <div class="section-header">
             <div>
-              <h2 class="section-title">Latest Opportunities</h2>
-              <p class="section-subtitle">Stay updated with newly posted vacancies, scholarships, and funds.</p>
+              <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Recently Updated</span>
+              <h2>Latest Opportunities</h2>
             </div>
+            <a href="#opportunities" class="btn btn-outline">Explore Directory <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i></a>
           </div>
-
-          <!-- Dynamic Search & Filter Pills -->
-          <div class="search-filter-wrapper">
-            <div class="search-bar-row">
-              <div class="search-input-container">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="home-search" class="search-input" placeholder="Search by title, organization, or keywords...">
-              </div>
-              <button id="home-search-btn" class="btn btn-primary">Find Posts</button>
-            </div>
-            
-            <div class="filter-pills-row">
-              <span class="filter-label">Quick Filters:</span>
-              <button class="filter-pill home-filter-pill active" data-category="All">All Categories</button>
-              ${this.state.categories.map(cat => `
-                <button class="filter-pill home-filter-pill" data-category="${cat.name}">${cat.name}</button>
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- Opportunities Listing Grid -->
-          <div class="opportunities-grid" id="home-opportunities-grid">
+          <div class="opportunities-grid" id="home-opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
             ${latestOpps.map(opp => this.cardTemplate(opp)).join('')}
           </div>
-
-          <div class="load-more-container">
-            <a href="#opportunities" class="btn btn-secondary">
-              Browse All Listings <i class="fa-solid fa-list-ul" style="margin-left: 8px;"></i>
-            </a>
-          </div>
         </div>
       </section>
 
-      <!-- FAQ Accordion section -->
-      <section class="faq-section">
+      <!-- Popular Categories Grid Section -->
+      <section class="section" style="background-color: var(--bg-tertiary); transition: background-color var(--transition-normal);">
         <div class="container">
-          <div class="section-header" style="justify-content: center; text-align: center; margin-bottom: 50px;">
-            <div>
-              <h2 class="section-title" style="margin: 0 auto;">Frequently Asked Questions</h2>
-              <p class="section-subtitle">Everything you need to know about navigating opportunities on Afri Tech Hub.</p>
-            </div>
+          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
+            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Structured Categories</span>
+            <h2>Search by Category</h2>
+            <p>Explore resources categorized by application types to simplify your journey.</p>
           </div>
-          <div class="faq-container">
-            ${this.state.opportunities.length > 0 ? DataStore.getFaqs().slice(0, 4).map(faq => `
-              <div class="faq-item">
-                <button class="faq-question-btn">
-                  <span>${faq.question}</span>
-                  <div class="faq-icon-box">
-                    <i class="fa-solid fa-chevron-down"></i>
-                  </div>
-                </button>
-                <div class="faq-answer-wrapper">
-                  <div class="faq-answer">
-                    <p>${faq.answer}</p>
-                  </div>
-                </div>
-              </div>
-            `).join('') : ''}
-          </div>
-          <div style="text-align: center; margin-top: 30px;">
-            <a href="#faq" class="btn btn-secondary btn-sm">View More FAQs</a>
+          <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px;">
+            ${categoriesGrid}
           </div>
         </div>
       </section>
 
-      <!-- Newsletter Section -->
-      <section class="newsletter-section container">
-        <div class="newsletter-card">
-          <h2 class="newsletter-title">Subscribe to Opportunity Alerts</h2>
-          <p class="newsletter-desc">Get direct email notifications about new grants, scholarships, and vacancies. Weekly digests, strictly zero spam.</p>
-          <form class="newsletter-form" id="home-newsletter-form">
-            <input type="email" class="newsletter-input" placeholder="Enter your email address" required>
-            <button type="submit" class="btn btn-accent btn-sm">Subscribe</button>
-          </form>
-        </div>
-      </section>
-    `;
-  },
-
-  // --- View: OPPORTUNITIES BROWSER ---
-  templateOpportunities(params) {
-    return `
-      <section class="container" style="padding-top: 60px; padding-bottom: 80px;">
-        <div class="section-header" style="flex-direction: column; align-items: flex-start; margin-bottom: 30px;">
-          <h1 style="font-size: 38px;">Discover Opportunities</h1>
-          <p style="color: var(--text-secondary); margin-top: 8px;">Explore and filter active jobs, funding programs, and fellowships across Africa.</p>
-        </div>
-
-        <!-- Advanced Filter Row -->
-        <div class="search-filter-wrapper" style="padding: 24px;">
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px;">
-            <div class="search-input-container">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="opp-search" class="search-input" placeholder="Search roles, sponsors, locations, or key terms...">
+      <!-- Newsletter Subsection -->
+      <section class="section">
+        <div class="container">
+          <div class="newsletter-card" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); border-radius: 24px; padding: 60px 40px; color:#fff; display:grid; grid-template-columns: 1.2fr 1fr; gap:40px; align-items:center;">
+            <div class="newsletter-info">
+              <h2 style="color:#fff; font-size:32px; margin-bottom:12px;">Get Weekly Opportunities Direct to Your Inbox</h2>
+              <p style="color:rgba(255,255,255,0.85); font-size:15px; line-height:1.6;">Stay updated on newly listed remote entry-level software engineer jobs, scholarships, fellowships, and VC grants. Completely free. Unsubscribe anytime.</p>
             </div>
-            
-            <div>
-              <select id="opp-cat-filter" class="form-control" style="background-color: var(--bg-secondary); height: 56px;">
-                <option value="All">All Categories</option>
-                ${this.state.categories.map(cat => `
-                  <option value="${cat.name}">${cat.name}</option>
-                `).join('')}
-              </select>
-            </div>
-
-            <div>
-              <select id="opp-sort" class="form-control" style="background-color: var(--bg-secondary); height: 56px;">
-                <option value="latest">Sort by: Date Posted</option>
-                <option value="deadline">Sort by: Closest Deadline</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Listings Grid -->
-        <div class="opportunities-grid" id="opp-grid">
-          <!-- Dynamic cards injected by updateList() in app.js -->
-        </div>
-
-        <!-- Load More Pagination Button -->
-        <div class="load-more-container">
-          <button id="load-more-btn" class="btn btn-secondary" style="display: none;">
-            Load More Listings <i class="fa-solid fa-chevron-down" style="margin-left: 8px;"></i>
-          </button>
-        </div>
-      </section>
-    `;
-  },
-
-  // --- View: CATEGORIES GRID ---
-  templateCategories() {
-    return `
-      <section class="container" style="padding-top: 60px; padding-bottom: 80px;">
-        <div class="section-header" style="flex-direction: column; align-items: flex-start; margin-bottom: 50px;">
-          <h1 style="font-size: 38px;">Browse by Category</h1>
-          <p style="color: var(--text-secondary); margin-top: 8px;">Find targeted support, grants, vacancies, or academic paths tailored for you.</p>
-        </div>
-
-        <div class="categories-grid">
-          ${this.state.categories.map(cat => `
-            <div class="category-card" onclick="window.location.hash='#opportunities?category=${cat.name}'">
-              <div class="category-icon-box">
-                <i class="fa-solid fa-${cat.icon}"></i>
+            <form id="home-newsletter-form" style="display:flex; flex-direction:column; gap:12px; width:100%;">
+              <div style="display:flex; gap:10px; background:rgba(255,255,255,0.15); padding:6px; border-radius:50px; border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(4px);">
+                <input type="email" placeholder="Your professional email address" style="width:100%; border:none; background:none; padding:12px 20px; color:#fff; outline:none;" required>
+                <button type="submit" class="btn btn-primary" style="background:#fff; color:var(--text-primary); border-radius:50px; font-weight:700; padding:12px 24px;">Subscribe</button>
               </div>
-              <h3 class="category-name">${cat.name}</h3>
-              <p class="category-desc">${cat.description}</p>
-              <div class="category-count">${cat.count} Active Listings &rarr;</div>
-            </div>
-          `).join('')}
-        </div>
-      </section>
-    `;
-  },
-
-  // --- View: ABOUT PAGE ---
-  templateAbout() {
-    return `
-      <!-- About Hero -->
-      <section class="about-hero">
-        <div class="container animate-fade-in">
-          <h1>Our Mission & Community</h1>
-          <p>Connecting African talent to regional & global empowerment funds.</p>
-        </div>
-      </section>
-
-      <!-- About Narrative -->
-      <section class="container about-content-section">
-        <div class="about-grid">
-          <div class="about-text animate-fade-in-up">
-            <h2>Bridging the Opportunity Gap in Africa</h2>
-            <p>
-              Afri Tech Hub was founded with a single driving mission: to democratize access to economic empowerment for African youth, tech founders, and graduates. 
-            </p>
-            <p>
-              Oftentimes, life-changing resources, business grants, fully funded scholarships, and high-paying remote job listings exist but are scattered across complex databases, requiring paid subscriptions or complicated login credentials to discover.
-            </p>
-            <p>
-              We believe that information is power, and access should be open. That's why Afri Tech Hub maintains a completely open platform with no logins, no user profiles, and no paywalls. We focus on simplicity and speed to deliver high-quality, verified opportunities directly to those who need them.
-            </p>
-          </div>
-          
-          <div class="about-visual-grid">
-            <div class="about-stat-card">
-              <div class="about-stat-num">20+</div>
-              <div class="about-stat-label">Curated Daily Listings</div>
-            </div>
-            <div class="about-stat-card">
-              <div class="about-stat-num">100%</div>
-              <div class="about-stat-label">Free & Open Access</div>
-            </div>
-            <div class="about-stat-card">
-              <div class="about-stat-num">54</div>
-              <div class="about-stat-label">African Nations Served</div>
-            </div>
-            <div class="about-stat-card">
-              <div class="about-stat-num">15K+</div>
-              <div class="about-stat-label">Active Members</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Core Values -->
-        <div style="margin-top: 80px;">
-          <h2 style="text-align: center; margin-bottom: 45px; font-size: 32px;">Our Driving Values</h2>
-          <div class="values-grid">
-            <div class="value-card">
-              <div class="value-icon"><i class="fa-solid fa-shield-halved"></i></div>
-              <h3 class="value-title">Direct Verification</h3>
-              <p class="value-desc">Every vacancy, grant, and scholarship is carefully verified against official databases to protect applicants from fraudulent postings.</p>
-            </div>
-            <div class="value-card">
-              <div class="value-icon"><i class="fa-solid fa-lock-open"></i></div>
-              <h3 class="value-title">Radical Accessibility</h3>
-              <p class="value-desc">No accounts, no user data collection, and no logins. Access any link, description, and application guidelines in one click.</p>
-            </div>
-            <div class="value-card">
-              <div class="value-icon"><i class="fa-solid fa-users"></i></div>
-              <h3 class="value-title">Community Driven</h3>
-              <p class="value-desc">Built for collaboration. Users can easily contribute new roles, and our instant notification updates keep the community ahead of deadlines.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    `;
-  },
-
-  // --- View: FAQ PAGE ---
-  templateFAQ() {
-    const allFaqs = DataStore.getFaqs();
-    return `
-      <section class="container" style="padding-top: 60px; padding-bottom: 80px;">
-        <div class="section-header" style="flex-direction: column; align-items: center; text-align: center; margin-bottom: 50px;">
-          <h1 style="font-size: 38px;">Frequently Asked Questions</h1>
-          <p style="color: var(--text-secondary); margin-top: 8px; max-width: 600px;">
-            Find quick answers to common queries regarding application links, posting verification, and our WhatsApp community hubs.
-          </p>
-          <div class="search-input-container" style="max-width: 500px; width: 100%; margin-top: 30px; border: 1px solid var(--border-color); background-color: var(--bg-secondary);">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="faq-search" class="search-input" placeholder="Search FAQ topics (e.g. apply, verify, register)...">
-          </div>
-        </div>
-
-        <div class="faq-container" id="faq-results">
-          ${allFaqs.map(faq => `
-            <div class="faq-item">
-              <button class="faq-question-btn">
-                <span>${faq.question}</span>
-                <div class="faq-icon-box">
-                  <i class="fa-solid fa-chevron-down"></i>
-                </div>
-              </button>
-              <div class="faq-answer-wrapper">
-                <div class="faq-answer">
-                  <p>${faq.answer}</p>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </section>
-    `;
-  },
-
-  // --- View: CONTACT PAGE ---
-  templateContact() {
-    return `
-      <section class="contact-hero">
-        <div class="container animate-fade-in">
-          <h1>Connect With Our Team</h1>
-          <p>Have inquiries, media requests, or want to partner with us? We'd love to hear from you.</p>
-        </div>
-      </section>
-
-      <section class="container contact-section">
-        <div class="contact-grid">
-          <!-- Info Panel -->
-          <div class="contact-info-panel">
-            <div class="contact-info-header">
-              <h2>Help Us Reach More Founders</h2>
-              <p>
-                If you are a corporate brand, development bank, academic institution, or accelerator manager looking to promote opportunities, drop us a line. We list legitimate opportunities for free.
-              </p>
-            </div>
-
-            <div class="contact-details-list">
-              <div class="contact-card-item">
-                <div class="contact-card-icon"><i class="fa-solid fa-envelope"></i></div>
-                <div class="contact-card-content">
-                  <h4>Email Support</h4>
-                  <p>info@afritechhub.org</p>
-                </div>
-              </div>
-              <div class="contact-card-item">
-                <div class="contact-card-icon"><i class="fa-solid fa-phone"></i></div>
-                <div class="contact-card-content">
-                  <h4>Phone Hotline</h4>
-                  <p>+2349159701354</p>
-                </div>
-              </div>
-              <div class="contact-card-item">
-                <div class="contact-card-icon"><i class="fa-solid fa-map-pin"></i></div>
-                <div class="contact-card-content">
-                  <h4>HQ Office</h4>
-                  <p>Victoria Island, Lagos, Nigeria</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Form Card -->
-          <div class="contact-form-card">
-            <h3>Send a Message</h3>
-            <form id="ath-contact-form">
-              <div class="form-group">
-                <label for="c-name" class="form-label">Full Name</label>
-                <input type="text" id="c-name" class="form-control" placeholder="John Doe" required>
-              </div>
-              <div class="form-group">
-                <label for="c-email" class="form-label">Email Address</label>
-                <input type="email" id="c-email" class="form-control" placeholder="john@example.com" required>
-              </div>
-              <div class="form-group">
-                <label for="c-subject" class="form-label">Subject</label>
-                <input type="text" id="c-subject" class="form-control" placeholder="e.g. Partnership Request, Listing Bug" required>
-              </div>
-              <div class="form-group">
-                <label for="c-msg" class="form-label">Your Message</label>
-                <textarea id="c-msg" class="form-control" rows="5" placeholder="How can we assist you today?" required></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message <i class="fa-solid fa-paper-plane" style="margin-left: 8px;"></i></button>
+              <p style="font-size:11px; color:rgba(255,255,255,0.7); text-align:center;">We protect your privacy. Zero spam. Safe unsubscribes.</p>
             </form>
           </div>
         </div>
       </section>
+
+      <!-- FAQs Home Accordions -->
+      <section class="section" style="background-color: var(--bg-tertiary); transition: background-color var(--transition-normal);">
+        <div class="container" style="max-width: 800px;">
+          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
+            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Clarifications</span>
+            <h2>FAQs</h2>
+            <p>Quick answers about Afri Tech Hub and how we operate.</p>
+          </div>
+          <div class="faq-list">
+            ${DataStore.getFaqs().map(faq => `
+              <div class="faq-item">
+                <button class="faq-question-btn">
+                  <span>${faq.question}</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="faq-answer">
+                  <p>${faq.answer}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </section>
     `;
   },
 
-  // --- View: SINGLE POST DETAIL PAGE ---
+  templateOpportunities(params) {
+    const opps = DataStore.getOpportunities();
+    
+    // Extract unique countries dynamically for country filter
+    const countries = ['All', ...new Set(opps.map(o => o.country).filter(Boolean))];
+    const countryOptions = countries.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    // Categories filter options
+    const categoryOptions = ['All', ...new Set(opps.map(o => o.category))].map(c => `<option value="${c}">${c}</option>`).join('');
+
+    return `
+      <section class="section" style="padding-top:60px;">
+        <div class="container">
+          <div class="section-header" style="margin-bottom: 40px;">
+            <div>
+              <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Filter & Discover</span>
+              <h2>Opportunities Directory</h2>
+              <p>Explore active internships, remote junior developer roles, graduate trainee placements, and seed grants.</p>
+            </div>
+          </div>
+
+          <!-- Advanced Multi-Column Filter Card -->
+          <div class="filter-card">
+            <div class="filter-grid">
+              <!-- Search query -->
+              <div class="filter-group">
+                <label for="opp-search">Keyword Search</label>
+                <div class="filter-search-wrapper">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, skills, orgs...">
+                </div>
+              </div>
+
+              <!-- Category selector -->
+              <div class="filter-group">
+                <label for="opp-cat-filter">Category</label>
+                <select id="opp-cat-filter" class="admin-form-control">
+                  <option value="All">All Categories</option>
+                  ${categoryOptions}
+                </select>
+              </div>
+
+              <!-- Country selector -->
+              <div class="filter-group">
+                <label for="opp-country-filter">Country</label>
+                <select id="opp-country-filter" class="admin-form-control">
+                  ${countryOptions}
+                </select>
+              </div>
+
+              <!-- Remote/Onsite selector -->
+              <div class="filter-group">
+                <label for="opp-remote-filter">Workplace</label>
+                <select id="opp-remote-filter" class="admin-form-control">
+                  <option value="All">All Locations</option>
+                  <option value="Remote">Remote</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Onsite">Onsite</option>
+                </select>
+              </div>
+
+              <!-- Experience level selector -->
+              <div class="filter-group">
+                <label for="opp-exp-filter">Level / Target</label>
+                <select id="opp-exp-filter" class="admin-form-control">
+                  <option value="All">All Levels</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Entry Level">Entry Level</option>
+                  <option value="Graduate">Graduate</option>
+                  <option value="Fellowship">Fellowship</option>
+                  <option value="Scholarship">Scholarship</option>
+                </select>
+              </div>
+
+              <!-- Sort selector (added in next row visually due to grid wrap) -->
+              <div class="filter-group" style="grid-column: span 1; margin-top: 10px;">
+                <label for="opp-sort">Sort By</label>
+                <select id="opp-sort" class="admin-form-control">
+                  <option value="latest">Latest Added</option>
+                  <option value="deadline">Approaching Deadline</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opportunities Card Grid -->
+          <div class="opportunities-grid" id="opp-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; margin-bottom: 40px;">
+            <!-- Filled dynamically by updateList -->
+          </div>
+
+          <!-- Load More Pagination -->
+          <div style="display: flex; justify-content: center; margin-top: 20px;">
+            <button class="btn btn-outline" id="load-more-btn" style="display: none;"><i class="fa-solid fa-spinner" style="margin-right:8px;"></i> Load More Opportunities</button>
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  templateCategories() {
+    const list = this.state.categories.map(cat => `
+      <a href="#opportunities?category=${encodeURIComponent(cat.name)}" class="category-card animate-fade-in-up">
+        <div class="category-icon">
+          <i class="fa-solid fa-${cat.icon}"></i>
+        </div>
+        <h3 class="category-title">${cat.name}</h3>
+        <p class="category-desc">${cat.description}</p>
+        <span class="category-count">${cat.count} listings</span>
+      </a>
+    `).join('');
+
+    return `
+      <section class="section" style="padding-top:60px;">
+        <div class="container">
+          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
+            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Browse Structures</span>
+            <h2>Opportunity Categories</h2>
+            <p>Discover scholarships, business accelerators, fellowships, and technical roles catalogued for easy discovery.</p>
+          </div>
+          <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px;">
+            ${list}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  templateAbout() {
+    return `
+      <section class="section" style="padding-top: 60px;">
+        <div class="container" style="max-width: 900px;">
+          <div class="section-header" style="text-align:center; margin-bottom:50px;">
+            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Our Identity</span>
+            <h2>About Afri Tech Hub</h2>
+            <p>Bridging the resource gap for African tech talent and entrepreneurs.</p>
+          </div>
+          <div class="about-content-card" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow: var(--shadow-sm); line-height: 1.8;">
+            <p style="margin-bottom:20px;"><strong>Afri Tech Hub</strong> is an open-access platform built to catalog high-impact growth channels for African developers, engineers, and startup founders. We believe that access to careers, grants, fellowships, and quality education should be free and democratized.</p>
+            
+            <p style="margin-bottom:20px;">Unlike traditional job boards, we do not require users to create accounts, fill profiles, or pass login gateways. Afri Tech Hub provides direct access. Every opportunity listed contains a direct button leading to the official application portal of the provider (e.g. Google, Mastercard Foundation, or international startup funds).</p>
+
+            <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-shield-halved" style="color:var(--color-primary); margin-right:10px;"></i> Verified Sources Only</h3>
+            <p style="margin-bottom:20px;">Every post is curated and verified by our board team from reputable multinational companies, international development organizations, venture capital organizations, and top academic bodies.</p>
+
+            <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-users" style="color:var(--color-primary); margin-right:10px;"></i> Community Outreach</h3>
+            <p style="margin-bottom:20px;">To support real-time alerts, we host an active WhatsApp community with over 5,000+ members. Members receive instant alerts on rolling grants, vacancies, and scholarship openings directly to their phones.</p>
+
+            <div style="display:flex; justify-content:center; margin-top:40px;">
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="background:#25d366; border-color:#25d366;"><i class="fa-brands fa-whatsapp" style="margin-right:8px;"></i> Join our WhatsApp Community</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  templateFAQ() {
+    return `
+      <section class="section" style="padding-top: 60px;">
+        <div class="container" style="max-width: 800px;">
+          <div class="section-header" style="text-align:center; margin-bottom:50px;">
+            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Help Center</span>
+            <h2>FAQs</h2>
+            <p>Find answers to common questions about Afri Tech Hub.</p>
+          </div>
+
+          <div style="margin-bottom:30px;">
+            <input type="text" id="faq-search" class="admin-form-control" placeholder="Search FAQ topics..." style="padding:14px 20px; border-radius:50px; background:var(--bg-card); box-shadow:var(--shadow-sm); border:1px solid var(--border-color);">
+          </div>
+
+          <div class="faq-list" id="faq-results">
+            ${DataStore.getFaqs().map(faq => `
+              <div class="faq-item">
+                <button class="faq-question-btn">
+                  <span>${faq.question}</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="faq-answer">
+                  <p>${faq.answer}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  templateContact() {
+    return `
+      <section class="section" style="padding-top: 60px;">
+        <div class="container" style="max-width: 900px;">
+          <div class="section-header" style="text-align:center; margin-bottom:50px;">
+            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Get in Touch</span>
+            <h2>Contact Afri Tech Hub</h2>
+            <p>Reach out to submit vacancy lists, partnership proposals, or report listing anomalies.</p>
+          </div>
+
+          <div class="contact-grid" style="display:grid; grid-template-columns:1fr 1.5fr; gap:40px; align-items:start;">
+            <!-- Contact Card Details -->
+            <div class="contact-info-card" style="background-color:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:30px; box-shadow:var(--shadow-sm);">
+              <h3 style="margin-bottom:20px;">Contact Details</h3>
+              <div class="footer-contact-item" style="margin-bottom:15px; display:flex; gap:12px; align-items:center;">
+                <i class="fa-solid fa-location-dot" style="color:var(--color-primary);"></i>
+                <span>Victoria Island, Lagos, Nigeria</span>
+              </div>
+              <div class="footer-contact-item" style="margin-bottom:15px; display:flex; gap:12px; align-items:center;">
+                <i class="fa-solid fa-envelope" style="color:var(--color-primary);"></i>
+                <span>info@afritechhub.org</span>
+              </div>
+              <div class="footer-contact-item" style="margin-bottom:25px; display:flex; gap:12px; align-items:center;">
+                <i class="fa-solid fa-phone" style="color:var(--color-primary);"></i>
+                <span>+2349159701354</span>
+              </div>
+              <div class="social-links" style="display:flex; gap:10px;">
+                <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" style="background:var(--bg-tertiary); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-brands fa-x-twitter"></i></a>
+                <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" style="background:var(--bg-tertiary); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-brands fa-linkedin-in"></i></a>
+                <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" style="background:var(--bg-tertiary); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-brands fa-facebook-f"></i></a>
+              </div>
+            </div>
+
+            <!-- Form -->
+            <div class="contact-form-card" style="background-color:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow:var(--shadow-sm);">
+              <form id="contact-form">
+                <div class="admin-form-group">
+                  <label class="form-label" for="contact-name">Full Name *</label>
+                  <input type="text" id="contact-name" class="admin-form-control" placeholder="John Doe" required>
+                </div>
+                <div class="admin-form-group">
+                  <label class="form-label" for="contact-email">Email Address *</label>
+                  <input type="email" id="contact-email" class="admin-form-control" placeholder="john@example.com" required>
+                </div>
+                <div class="admin-form-group">
+                  <label class="form-label" for="contact-subject">Subject *</label>
+                  <input type="text" id="contact-subject" class="admin-form-control" placeholder="Opportunity Listing, Partnership..." required>
+                </div>
+                <div class="admin-form-group">
+                  <label class="form-label" for="contact-message">Message *</label>
+                  <textarea id="contact-message" class="admin-form-control" rows="5" placeholder="Explain your message in detail..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Inquiry <i class="fa-solid fa-paper-plane" style="margin-left:8px;"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
   templateSinglePost(postId) {
-    const opp = this.state.opportunities.find(o => o.id === postId);
+    const opp = DataStore.getOpportunities(true).find(o => o.id === postId);
     if (!opp) {
       return `
-        <div class="container" style="padding-top: 100px; padding-bottom: 100px; text-align: center;">
-          <i class="fa-solid fa-triangle-exclamation" style="font-size: 64px; color: var(--color-accent); margin-bottom: 24px;"></i>
+        <div class="container text-center" style="padding:100px 24px;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 50px; color: var(--color-accent); margin-bottom: 20px;"></i>
           <h2>Opportunity Not Found</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 30px;">The link you followed may be broken or the listing has expired.</p>
-          <a href="#opportunities" class="btn btn-primary">Return to Directory</a>
+          <p>This posting may have expired, been archived, or deleted by the administrator.</p>
+          <a href="#opportunities" class="btn btn-primary" style="margin-top:20px;">Back to Directory</a>
         </div>
       `;
     }
 
-    const iconClass = opp.category.toLowerCase().replace(' ', '-');
-    const displayDate = this.formatDate(opp.date);
-    const deadlineDate = this.formatDate(opp.deadline);
+    const requirementsList = opp.requirements.map(req => `<li><i class="fa-regular fa-square-check" style="color:var(--color-primary); margin-right:10px;"></i> ${req}</li>`).join('');
+    const benefitsList = opp.benefits.map(ben => `<li><i class="fa-regular fa-star" style="color:var(--color-accent); margin-right:10px;"></i> ${ben}</li>`).join('');
+    const skillsBadges = opp.skills ? opp.skills.map(s => `<span class="badge-skill" style="background-color: var(--color-primary-light); color: var(--color-primary); font-size:11px; font-weight:700; padding:6px 12px; border-radius:50px; text-transform:uppercase;">${s}</span>`).join('') : '';
 
-    // Filter similar items
-    const similarOpps = this.state.opportunities
-      .filter(o => o.category === opp.category && o.id !== opp.id)
+    // Related Listings
+    const related = DataStore.getOpportunities()
+      .filter(o => o.category.toLowerCase() === opp.category.toLowerCase() && o.id !== opp.id)
       .slice(0, 3);
+    const relatedGrid = related.map(o => this.cardTemplate(o)).join('');
 
     return `
-      <section class="container post-detail-section">
-        <!-- Back Navigation Link -->
-        <div style="margin-bottom: 32px;">
-          <a href="#" id="post-back-btn" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i> Back to Listings
-          </a>
-        </div>
-
-        <div class="post-detail-grid">
-          <!-- Main Content Pane -->
-          <article class="post-main-content">
-            <div class="post-header-meta">
-              <span class="category-tag category-${iconClass}">${opp.category}</span>
-              <span style="color: var(--text-muted); font-size: 14px;"><i class="fa-solid fa-calendar" style="margin-right: 6px;"></i>Posted: ${displayDate}</span>
-            </div>
-            
-            <div class="post-detail-image-container">
-              <img src="${opp.image}" alt="${opp.title}">
-            </div>
-            
-            <h1 class="post-title">${opp.title}</h1>
-
-            <!-- Quick Metadata Bar -->
-            <div class="post-meta-details-strip">
-              <div class="strip-item">
-                <div class="strip-icon"><i class="fa-solid fa-building"></i></div>
-                <div class="strip-info">
-                  <h5>Organization</h5>
-                  <p>${opp.company}</p>
+      <section class="section" style="padding-top:40px;">
+        <div class="container">
+          <!-- Back Link -->
+          <a href="#opportunities" class="back-link" style="display:inline-flex; align-items:center; gap:8px; font-weight:700; color:var(--text-secondary); margin-bottom:30px;"><i class="fa-solid fa-arrow-left"></i> Back to Listings</a>
+          
+          <!-- Detail Grid Layout -->
+          <div class="opp-details-layout" style="display:grid; grid-template-columns:1.8fr 1fr; gap:40px; align-items:start;">
+            <!-- Left Side Core Content -->
+            <div class="opp-details-core">
+              <div class="opp-details-header" style="margin-bottom:35px;">
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;">
+                  <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
+                  ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ''}
+                  ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ''}
                 </div>
-              </div>
-              <div class="strip-item">
-                <div class="strip-icon"><i class="fa-solid fa-location-dot"></i></div>
-                <div class="strip-info">
-                  <h5>Location</h5>
-                  <p>${opp.location}</p>
-                </div>
-              </div>
-              <div class="strip-item">
-                <div class="strip-icon"><i class="fa-solid fa-hourglass-half"></i></div>
-                <div class="strip-info">
-                  <h5>Deadline</h5>
-                  <p>${deadlineDate}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Body Details -->
-            <div class="post-body-content">
-              <h3>Description</h3>
-              <p>${opp.description}</p>
-
-              <h3>Requirements & Eligibility</h3>
-              <ul>
-                ${opp.requirements.map(req => `<li>${req}</li>`).join('')}
-              </ul>
-
-              <h3>Benefits & Offerings</h3>
-              <ul>
-                ${opp.benefits.map(ben => `<li>${ben}</li>`).join('')}
-              </ul>
-            </div>
-          </article>
-
-          <!-- Sidebar Pane -->
-          <aside>
-            <div class="post-sidebar-sticky">
-              <!-- Call to Action Box -->
-              <div class="apply-card-box">
-                <h4 class="apply-card-title">Application Status</h4>
-                <div class="apply-card-deadline">
-                  <i class="fa-solid fa-stopwatch"></i> ${deadlineDate}
-                </div>
-                <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width: 100%; font-size: 16px; padding: 14px;">
-                  Apply Now <i class="fa-solid fa-external-link-alt" style="margin-left: 8px;"></i>
-                </a>
-                
-                <!-- Share Button Strip -->
-                <div class="share-strip">
-                  <span class="share-label">Share:</span>
-                  <div class="share-icons">
-                    <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(opp.title + ' ' + window.location.href)}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + ' - ' + window.location.href)}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-                    <a href="#" id="share-copy" class="share-btn" title="Copy Link"><i class="fa-solid fa-link"></i></a>
-                  </div>
+                <h1 style="font-size:32px; margin-bottom:15px;">${opp.title}</h1>
+                <div style="display:flex; flex-wrap:wrap; gap:20px; color:var(--text-muted); font-size:14px;">
+                  <span><i class="fa-solid fa-building"></i> ${opp.company}</span>
+                  <span><i class="fa-solid fa-location-dot"></i> ${opp.location}</span>
+                  <span><i class="fa-solid fa-calendar"></i> Posted: ${opp.date}</span>
                 </div>
               </div>
 
-              <!-- Similar Opportunities Widget -->
-              ${similarOpps.length > 0 ? `
-              <div class="sidebar-widget">
-                <h3 class="widget-title">Similar Opportunities</h3>
-                <div class="widget-list">
-                  ${similarOpps.map(so => `
-                    <a href="#post/${so.id}" class="widget-item-link">
-                      <h4>${so.title}</h4>
-                      <div class="widget-item-meta">
-                        <span>${so.company}</span>
-                        <span>Deadline: ${this.formatDate(so.deadline)}</span>
-                      </div>
-                    </a>
-                  `).join('')}
+              <!-- Banner Cover Image -->
+              <div style="border-radius:24px; overflow:hidden; margin-bottom:40px; height:350px; border: 1px solid var(--border-color);">
+                <img src="${opp.image}" alt="${opp.company} Banner" style="width:100%; height:100%; object-fit:cover;">
+              </div>
+
+              <!-- Description -->
+              <div class="content-block" style="margin-bottom:40px; line-height:1.75;">
+                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Detailed Description</h3>
+                <p style="white-space:pre-wrap; color:var(--text-secondary);">${opp.description}</p>
+              </div>
+
+              <!-- Requirements -->
+              <div class="content-block" style="margin-bottom:40px;">
+                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Eligibility & Requirements</h3>
+                <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; color:var(--text-secondary);">
+                  ${requirementsList}
+                </ul>
+              </div>
+
+              <!-- Benefits -->
+              <div class="content-block" style="margin-bottom:40px;">
+                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Benefits & Packages</h3>
+                <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; color:var(--text-secondary);">
+                  ${benefitsList}
+                </ul>
+              </div>
+
+              <!-- Skills tags -->
+              ${skillsBadges ? `
+              <div class="content-block" style="margin-bottom:40px;">
+                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Key Skills Target</h3>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                  ${skillsBadges}
                 </div>
               </div>
               ` : ''}
             </div>
-          </aside>
+
+            <!-- Right Side Sidebar details -->
+            <aside class="opp-details-sidebar" style="position:sticky; top:110px;">
+              <div class="sidebar-summary-card" style="background-color:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:30px; box-shadow:var(--shadow-sm);">
+                <h3 style="margin-bottom:20px; font-size:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Listing Summary</h3>
+                
+                <table style="width:100%; font-size:14px; margin-bottom:30px; border-collapse:collapse;">
+                  <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-industry" style="margin-right:10px;"></i> Organization</td>
+                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.company}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-list" style="margin-right:10px;"></i> Category</td>
+                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.category}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-layer-group" style="margin-right:10px;"></i> Target level</td>
+                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.experienceLevel || 'Graduate'}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-map-location-dot" style="margin-right:10px;"></i> Workplace</td>
+                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.remote || 'Onsite'}</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-earth-africa" style="margin-right:10px;"></i> Country</td>
+                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.country || 'Global'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-calendar-xmark" style="margin-right:10px;"></i> Deadline</td>
+                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--color-accent);">${opp.deadline === 'Rolling' ? 'Rolling Admission' : opp.deadline}</td>
+                  </tr>
+                </table>
+
+                <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width:100%; text-align:center; padding:15px 0; border-radius:12px; font-weight:700; display:block; margin-bottom:20px; font-size:15px;">Apply on Official Site <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:8px;"></i></a>
+
+                <!-- Share widget -->
+                <div style="border-top:1px solid var(--border-color); padding-top:20px;">
+                  <h4 style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; letter-spacing:0.5px;">Share Opportunity</h4>
+                  <div style="display:flex; gap:10px; justify-content:center;">
+                    <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(opp.title)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Share on Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + ' ' + window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                    <button class="btn btn-outline" id="share-copy-link" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Copy Link"><i class="fa-solid fa-copy"></i></button>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+          
+          <!-- Related Opportunities Section -->
+          ${relatedGrid ? `
+          <div style="margin-top:80px; border-top:1px solid var(--border-color); padding-top:60px;">
+            <h3 style="font-size:24px; margin-bottom:30px;"><i class="fa-solid fa-cubes-stacked" style="color:var(--color-primary); margin-right:10px;"></i> Related Listings</h3>
+            <div class="opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+              ${relatedGrid}
+            </div>
+          </div>
+          ` : ''}
         </div>
       </section>
     `;
   },
 
-  // --- View: PRIVACY POLICY ---
+  templateAdminLogin() {
+    return `
+      <div class="admin-login-wrapper">
+        <div class="admin-login-card animate-fade-in-up">
+          <div class="admin-login-header">
+            <i class="fa-solid fa-user-lock"></i>
+            <h2>Admin Authentication</h2>
+            <p>Access restricted to authorized platform administrators</p>
+          </div>
+          <form id="admin-login-form">
+            <div class="admin-form-group">
+              <label class="form-label" for="admin-username">Username *</label>
+              <input type="text" id="admin-username" class="admin-form-control" placeholder="Enter username" required autocomplete="username">
+            </div>
+            <div class="admin-form-group">
+              <label class="form-label" for="admin-password">Password *</label>
+              <input type="password" id="admin-password" class="admin-form-control" placeholder="Enter password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+              Verify Credentials <i class="fa-solid fa-right-to-bracket" style="margin-left: 8px;"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    `;
+  },
+
+  templateAdminDashboard(activeTab) {
+    if (sessionStorage.getItem('ath_admin_logged_in') !== 'true') {
+      return this.templateAdminLogin();
+    }
+
+    const allOpps = DataStore.getOpportunities(true);
+    const totalOpps = allOpps.length;
+    const publishedOpps = allOpps.filter(o => o.status === 'published' || !o.status).length;
+    const draftOpps = allOpps.filter(o => o.status === 'draft').length;
+    const archivedOpps = allOpps.filter(o => o.status === 'archived').length;
+    
+    const categoriesCount = DataStore.getCategories().length;
+    const subscribersCount = DataStore.getSubscribers().length;
+    const messagesCount = DataStore.getContactMessages().length;
+    const featuredCount = allOpps.filter(o => o.featured).length;
+
+    return `
+      <div class="container dashboard-container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header animate-fade-in-up">
+          <div class="dashboard-title-area">
+            <h2>Admin Operations Portal</h2>
+            <p>Empowering Afri Tech Hub management & controls</p>
+          </div>
+          <div class="dashboard-actions">
+            <button id="admin-logout-btn" class="btn btn-danger btn-sm">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard Layout -->
+        <div class="dashboard-layout">
+          <!-- Sidebar Navigation Tabs -->
+          <aside class="dashboard-sidebar animate-fade-in-up">
+            <button class="dashboard-tab-btn ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview">
+              <i class="fa-solid fa-chart-pie"></i> Overview
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === 'posts' ? 'active' : ''}" data-tab="posts">
+              <i class="fa-solid fa-table-list"></i> Manage Posts
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === 'create' ? 'active' : ''}" data-tab="create">
+              <i class="fa-solid fa-square-plus"></i> ${this.state.editingPostId ? 'Edit Post' : 'Add New Post'}
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === 'categories' ? 'active' : ''}" data-tab="categories">
+              <i class="fa-solid fa-tags"></i> Edit Categories
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === 'subscribers' ? 'active' : ''}" data-tab="subscribers">
+              <i class="fa-solid fa-envelope-open-text"></i> Subscribers (${subscribersCount})
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === 'messages' ? 'active' : ''}" data-tab="messages">
+              <i class="fa-solid fa-inbox"></i> Inbox Inquiries (${messagesCount})
+            </button>
+          </aside>
+
+          <!-- Main Panel Content Viewport -->
+          <main class="dashboard-main animate-fade-in" id="dashboard-viewport">
+            ${this.renderDashboardTab(activeTab, {
+              totalOpps, publishedOpps, draftOpps, archivedOpps, categoriesCount, subscribersCount, messagesCount, featuredCount, allOpps
+            })}
+          </main>
+        </div>
+      </div>
+    `;
+  },
+
+  renderDashboardTab(tab, data) {
+    if (tab === 'overview') {
+      return `
+        <!-- Metrics Grid -->
+        <div class="stats-grid animate-fade-in-up">
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Total Posts</h3>
+              <div class="value">${data.totalOpps}</div>
+            </div>
+            <div class="stat-card-icon"><i class="fa-solid fa-folder-open"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Published</h3>
+              <div class="value" style="color:var(--color-primary);">${data.publishedOpps}</div>
+            </div>
+            <div class="stat-card-icon" style="background-color:var(--color-primary-light); color:var(--color-primary);"><i class="fa-solid fa-circle-check"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Drafts</h3>
+              <div class="value" style="color:hsl(35, 95%, 40%);">${data.draftOpps}</div>
+            </div>
+            <div class="stat-card-icon" style="background-color:hsl(35, 95%, 93%); color:hsl(35, 95%, 45%);"><i class="fa-solid fa-pencil"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Archived</h3>
+              <div class="value" style="color:hsl(320, 95%, 40%);">${data.archivedOpps}</div>
+            </div>
+            <div class="stat-card-icon" style="background-color:hsl(320, 95%, 93%); color:hsl(320, 95%, 45%);"><i class="fa-solid fa-archive"></i></div>
+          </div>
+        </div>
+
+        <div class="stats-grid animate-fade-in-up" style="animation-delay: 0.1s; margin-top:-20px;">
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Newsletter Subs</h3>
+              <div class="value">${data.subscribersCount}</div>
+            </div>
+            <div class="stat-card-icon" style="background-color:hsl(200, 95%, 93%); color:hsl(200, 95%, 35%);"><i class="fa-solid fa-envelope"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>User Messages</h3>
+              <div class="value">${data.messagesCount}</div>
+            </div>
+            <div class="stat-card-icon" style="background-color:hsl(270, 95%, 93%); color:hsl(270, 95%, 35%);"><i class="fa-solid fa-message"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Featured Posts</h3>
+              <div class="value">${data.featuredCount}</div>
+            </div>
+            <div class="stat-card-icon" style="background-color:var(--color-accent-light); color:hsl(var(--hue-accent), 92%, 35%);"><i class="fa-solid fa-star"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-info">
+              <h3>Categories</h3>
+              <div class="value">${data.categoriesCount}</div>
+            </div>
+            <div class="stat-card-icon"><i class="fa-solid fa-tag"></i></div>
+          </div>
+        </div>
+
+        <!-- Quick Summary Lists -->
+        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:30px; margin-top:10px;" class="animate-fade-in-up">
+          <div class="admin-card-body">
+            <h3 style="margin-bottom:20px; font-size:16px;"><i class="fa-solid fa-arrows-rotate" style="color:var(--color-primary); margin-right:8px;"></i> Recent Post Updates</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+              ${data.allOpps.slice(0, 5).map(o => `
+                <tr style="border-bottom:1px solid var(--border-color);">
+                  <td style="padding:10px 0; font-weight:700; color:var(--text-primary);">${o.title}</td>
+                  <td style="padding:10px 0; text-align:right;"><span class="badge-status ${o.status || 'published'}">${o.status || 'published'}</span></td>
+                </tr>
+              `).join('')}
+            </table>
+          </div>
+
+          <div class="admin-card-body">
+            <h3 style="margin-bottom:20px; font-size:16px;"><i class="fa-solid fa-inbox" style="color:var(--color-primary); margin-right:8px;"></i> Recent Inquiries</h3>
+            ${DataStore.getContactMessages().slice(0, 3).length === 0 ? '<p style="font-size:13px; color:var(--text-muted);">No messages in mailbox.</p>' : 
+              DataStore.getContactMessages().slice(0, 3).map(m => `
+                <div style="border-bottom:1px solid var(--border-color); padding:10px 0; font-size:13px;">
+                  <div style="font-weight:700; color:var(--text-primary);">${m.name} <span style="font-weight:400; color:var(--text-muted); font-size:11px;">(${m.email})</span></div>
+                  <div style="color:var(--text-secondary); margin-top:2px;">"${m.subject}"</div>
+                </div>
+              `).join('')
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    if (tab === 'posts') {
+      return `
+        <div class="admin-card-body animate-fade-in-up">
+          <div style="display:flex; justify-content:between; align-items:center; gap:20px; margin-bottom:25px; flex-wrap:wrap;">
+            <h3 style="font-size:18px;">Opportunities Catalog</h3>
+            <input type="text" id="admin-post-search" class="admin-form-control" style="max-width:300px; padding:8px 12px; font-size:13px;" placeholder="Search catalog by title, company...">
+          </div>
+
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Post Details</th>
+                  <th>Category</th>
+                  <th>Deadline</th>
+                  <th>Status</th>
+                  <th>Feature</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-post-table-body">
+                <!-- Filled dynamically by script -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    if (tab === 'create') {
+      const isEditing = !!this.state.editingPostId;
+      const categories = DataStore.getCategories();
+      const categoryOptions = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
+      return `
+        <div class="admin-card-body animate-fade-in-up">
+          <h3 style="margin-bottom:25px; font-size:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+            <i class="fa-solid fa-bullhorn" style="color:var(--color-primary); margin-right:8px;"></i>
+            ${isEditing ? 'Edit Post Details' : 'Publish New Opportunity'}
+          </h3>
+
+          <form id="admin-opp-form">
+            <!-- Row 1: Title & Organization -->
+            <div class="admin-form-row">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-title">Opportunity Title *</label>
+                <input type="text" id="adm-opp-title" class="admin-form-control" placeholder="e.g. Junior Frontend Developer" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-company">Organization / Sponsor Name *</label>
+                <input type="text" id="adm-opp-company" class="admin-form-control" placeholder="e.g. Google, Canonical" required>
+              </div>
+            </div>
+
+            <!-- Row 2: Category & Experience & Workplace -->
+            <div class="admin-form-row" style="grid-template-columns: repeat(3, 1fr);">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-category">Category *</label>
+                <select id="adm-opp-category" class="admin-form-control" required>
+                  <option value="" disabled selected>Select category</option>
+                  ${categoryOptions}
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-experience">Experience Target *</label>
+                <select id="adm-opp-experience" class="admin-form-control" required>
+                  <option value="Internship">Internship</option>
+                  <option value="Entry Level">Entry Level</option>
+                  <option value="Graduate">Graduate</option>
+                  <option value="Fellowship">Fellowship</option>
+                  <option value="Scholarship">Scholarship</option>
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-remote">Workplace Model *</label>
+                <select id="adm-opp-remote" class="admin-form-control" required>
+                  <option value="Remote">Remote</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Onsite">Onsite</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 3: Country & Location & Deadline -->
+            <div class="admin-form-row" style="grid-template-columns: repeat(3, 1fr);">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-country">Country Base *</label>
+                <input type="text" id="adm-opp-country" class="admin-form-control" placeholder="e.g. Global, Kenya, Nigeria" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-location">Specific Location *</label>
+                <input type="text" id="adm-opp-location" class="admin-form-control" placeholder="e.g. Nairobi, Kenya or Remote (Global)" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-deadline">Application Deadline *</label>
+                <input type="text" id="adm-opp-deadline" class="admin-form-control" placeholder="YYYY-MM-DD or 'Rolling'" required>
+              </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="admin-form-group">
+              <label class="form-label" for="adm-opp-short">Short Summary * (Max 150 characters)</label>
+              <input type="text" id="adm-opp-short" class="admin-form-control" maxlength="150" placeholder="Brief tagline shown on search grids" required>
+            </div>
+
+            <!-- Full Description -->
+            <div class="admin-form-group">
+              <label class="form-label" for="adm-opp-desc">Full Opportunity details *</label>
+              <textarea id="adm-opp-desc" class="admin-form-control" rows="5" placeholder="Elaborated description of the vacancy or grant..." required></textarea>
+            </div>
+
+            <!-- Row 4: Requirements & Benefits Textareas -->
+            <div class="admin-form-row">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-req">Requirements List * (One item per line)</label>
+                <textarea id="adm-opp-req" class="admin-form-control" rows="4" placeholder="Requirement 1&#10;Requirement 2&#10;Requirement 3" required></textarea>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-ben">Benefits List * (One item per line)</label>
+                <textarea id="adm-opp-ben" class="admin-form-control" rows="4" placeholder="Benefit 1&#10;Benefit 2&#10;Benefit 3" required></textarea>
+              </div>
+            </div>
+
+            <!-- Required Skills Input tags -->
+            <div class="admin-form-group">
+              <label class="form-label" for="adm-opp-skills">Required Skills (Type skill and press comma ',' or Enter)</label>
+              <input type="text" id="adm-opp-skills" class="admin-form-control" placeholder="React, Git, SQL, Python...">
+              <div class="skills-tags-container" id="adm-skills-tags"></div>
+            </div>
+
+            <!-- Image File or URL and Apply URL -->
+            <div class="admin-form-row">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-url">Official Application link *</label>
+                <input type="url" id="adm-opp-url" class="admin-form-control" placeholder="https://company-portal.com/apply" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-status">Post Status *</label>
+                <select id="adm-opp-status" class="admin-form-control" required>
+                  <option value="published">Published (Visible to public)</option>
+                  <option value="draft">Draft (Visible only to admin)</option>
+                  <option value="archived">Archived (Expired/Closed)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="admin-form-row">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-img-file">Upload Image Cover File</label>
+                <input type="file" id="adm-opp-img-file" class="admin-form-control" accept="image/*">
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-img-url">Or Image Web URL</label>
+                <input type="url" id="adm-opp-url" class="admin-form-control" placeholder="https://images.unsplash.com/... or Base64 code">
+              </div>
+            </div>
+
+            <div class="admin-form-group" style="display:flex; align-items:center; gap:20px;">
+              <div class="image-preview-box" id="adm-img-preview">
+                <span>No cover selected</span>
+              </div>
+              <div>
+                <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
+                  <input type="checkbox" id="adm-opp-featured" style="width:18px; height:18px;"> Set post as Homepage Featured Pick
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:20px; font-size:15px; font-weight:700;">
+              <i class="fa-solid fa-floppy-disk" style="margin-right:8px;"></i> Save Opportunity
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    if (tab === 'categories') {
+      const categories = DataStore.getCategories();
+      const list = categories.map(c => `
+        <div class="category-editor-card">
+          <div class="category-editor-info">
+            <div class="category-editor-icon"><i class="fa-solid fa-${c.icon}"></i></div>
+            <div class="category-editor-details">
+              <h4>${c.name}</h4>
+              <p>${c.description}</p>
+            </div>
+          </div>
+          <button class="btn btn-delete btn-sm btn-cat-delete" data-name="${c.name}"><i class="fa-solid fa-trash-can"></i> Delete</button>
+        </div>
+      `).join('');
+
+      return `
+        <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:30px;" class="animate-fade-in-up">
+          <!-- Form to add Category -->
+          <div class="admin-card-body" style="height:fit-content;">
+            <h3 style="margin-bottom:20px; font-size:16px;">Add New Category</h3>
+            <form id="admin-cat-form">
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-cat-name">Category Name *</label>
+                <input type="text" id="adm-cat-name" class="admin-form-control" placeholder="e.g. Fellowships" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-cat-icon">FontAwesome Icon name *</label>
+                <input type="text" id="adm-cat-icon" class="admin-form-control" placeholder="e.g. users, gift, briefcase" required>
+              </div>
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-cat-desc">Short Description *</label>
+                <textarea id="adm-cat-desc" class="admin-form-control" rows="3" placeholder="Explain listings in this category..." required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-plus"></i> Add Category</button>
+            </form>
+          </div>
+
+          <!-- Existing Categories -->
+          <div class="admin-card-body">
+            <h3 style="margin-bottom:20px; font-size:16px;">Active Categories</h3>
+            <div class="category-editor-list" id="admin-categories-editor-list">
+              ${list}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (tab === 'subscribers') {
+      const subs = DataStore.getSubscribers();
+      return `
+        <div class="admin-card-body animate-fade-in-up">
+          <div style="display:flex; justify-content:between; align-items:center; gap:20px; margin-bottom:25px; flex-wrap:wrap;">
+            <h3 style="font-size:18px;">Newsletter Subscriptions</h3>
+            <button class="btn btn-primary btn-sm" id="admin-sub-copy"><i class="fa-solid fa-copy"></i> Copy Email List</button>
+          </div>
+
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Subscriber Email Address</th>
+                  <th style="width: 150px; text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-subscribers-list">
+                ${subs.length === 0 ? '<tr><td colspan="2" class="text-center" style="padding:40px;">No newsletter signups yet.</td></tr>' : 
+                  subs.map(email => `
+                    <tr>
+                      <td style="font-weight:600; color:var(--text-primary);">${email}</td>
+                      <td style="text-align:right;">
+                        <button class="btn btn-delete btn-sm btn-sub-delete" data-email="${email}"><i class="fa-solid fa-trash-can"></i> Remove</button>
+                      </td>
+                    </tr>
+                  `).join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    if (tab === 'messages') {
+      const msgs = DataStore.getContactMessages();
+      return `
+        <div class="animate-fade-in-up" id="admin-messages-list">
+          <h3 style="margin-bottom:25px; font-size:18px;">Inbox Inquiries</h3>
+          ${msgs.length === 0 ? '<div class="admin-card-body text-center" style="padding:60px;">No messages received in mailbox yet.</div>' : 
+            msgs.map(m => `
+              <div class="message-card ${m.replied ? 'replied' : ''}">
+                <div class="message-card-header">
+                  <div>
+                    <div class="message-sender-name">${m.name}</div>
+                    <div class="message-sender-email">${m.email}</div>
+                  </div>
+                  <div class="message-date">${new Date(m.date).toLocaleString()}</div>
+                </div>
+                <div style="font-weight:700; margin-bottom:8px; color:var(--text-primary);">Subject: ${m.subject}</div>
+                <div class="message-body">${m.body}</div>
+                <div class="message-actions">
+                  <button class="btn btn-edit btn-sm btn-msg-reply" data-id="${m.id}">
+                    <i class="fa-solid ${m.replied ? 'fa-envelope' : 'fa-envelope-open'}"></i> 
+                    ${m.replied ? 'Mark Unread' : 'Mark Replied'}
+                  </button>
+                  <button class="btn btn-delete btn-sm btn-msg-delete" data-id="${m.id}"><i class="fa-solid fa-trash-can"></i> Delete</button>
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+      `;
+    }
+
+    return '';
+  },
+
   templatePrivacy() {
     return `
-      <section class="reading-section">
-        <div class="container reading-container">
-          <h1>Privacy Policy</h1>
-          <div class="reading-meta">
-            <span>Last Updated: June 25, 2026</span>
-          </div>
-          <div class="reading-content">
-            <p>
-              At Afri Tech Hub, accessible from our portal, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by Afri Tech Hub and how we use it.
-            </p>
-            <h2>No User Accounts</h2>
-            <p>
-              Afri Tech Hub is designed as an open directory. We do not require or allow user accounts, registrations, profiles, or passwords. Consequently, we do not collect personal profiles, email addresses (except when you voluntarily sign up for our newsletter or contact us via our contact form), or user configurations.
-            </p>
-            <h2>Log Files</h2>
-            <p>
-              Afri Tech Hub follows a standard procedure of using log files. These files log visitors when they visit websites. The information collected by log files includes internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date and time stamp, referring/exit pages, and possibly the number of clicks. These are not linked to any information that is personally identifiable. The purpose of the information is for analyzing trends, administering the site, tracking users' movement on the website, and gathering demographic information.
-            </p>
-            <h2>Cookies and Web Beacons</h2>
-            <p>
-              Like any other website, Afri Tech Hub uses "cookies". These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.
-            </p>
-            <h2>Third-Party Links</h2>
-            <p>
-              Our directory contains links to external application portals. If you click on a third-party link, you will be directed to that site. Note that these external sites are not operated by us. Therefore, we strongly advise you to review the Privacy Policy of these websites. We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party sites or services.
-            </p>
-            <h2>Consent</h2>
-            <p>
-              By using our website, you hereby consent to our Privacy Policy and agree to its terms.
-            </p>
+      <section class="section" style="padding-top: 60px;">
+        <div class="container" style="max-width: 800px;">
+          <h1 style="font-size:32px; margin-bottom:20px;">Privacy Policy</h1>
+          <div class="about-content-card" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow: var(--shadow-sm); line-height: 1.8; color:var(--text-secondary);">
+            <p style="margin-bottom:15px;">Last updated: June 28, 2026</p>
+            <p style="margin-bottom:15px;">Afri Tech Hub operates an open-access platform. We do not require visitors to register, sign up, or login to use our directory. Thus, we do not collect personal profiles, browser habits, or tracking logs.</p>
+            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">Information We Collect</h3>
+            <p style="margin-bottom:15px;">We only collect name, email address, and message bodies explicitly submitted through our Contact Form or Newsletter Signup box. This data is strictly used to address support inquiries and send weekly opportunity roundups.</p>
+            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">Third-Party Links</h3>
+            <p style="margin-bottom:15px;">Our platform indexes external links leading to official application portals. We do not control and are not liable for the privacy policies of external sites. We advise checking their terms before applying.</p>
           </div>
         </div>
       </section>
     `;
   },
 
-  // --- View: TERMS OF USE ---
   templateTerms() {
     return `
-      <section class="reading-section">
-        <div class="container reading-container">
-          <h1>Terms of Use</h1>
-          <div class="reading-meta">
-            <span>Last Updated: June 25, 2026</span>
-          </div>
-          <div class="reading-content">
-            <p>
-              Welcome to Afri Tech Hub. These Terms of Use govern your access to and use of our platform. By accessing the website, you accept these terms in full. If you disagree with these terms or any part of them, you must not use this website.
-            </p>
-            <h2>Directory Service Only</h2>
-            <p>
-              Afri Tech Hub functions solely as an informational directory of third-party opportunities (jobs, grants, scholarships, funding, vacancies). We do not recruit candidates, award funds, or evaluate academic applications directly. We are not an agent of the opportunity providers and hold no responsibility for their decisions, application processes, or hiring guidelines.
-            </p>
-            <h2>No Fees / Scam Warning</h2>
-            <p>
-              All access to Afri Tech Hub is completely free. We will never ask you for payments, application fees, search commissions, or bank details. Beware of scams: if any third-party site pretending to be associated with Afri Tech Hub requests money to evaluate your application, report them immediately.
-            </p>
-            <h2>User-Generated Posts</h2>
-            <p>
-              Our platform allows authorized community members and administrators to publish opportunity cards. By publishing opportunities on our platform, you warrant that the information is accurate, legal, and does not violate any copyright or intellectual property rights. Afri Tech Hub reserves the right to review, edit, or delete any listing that we deem fraudulent, inaccurate, or inappropriate without notice.
-            </p>
-            <h2>Disclaimer of Warranties</h2>
-            <p>
-              This website is provided "as is" without any representations or warranties, express or implied. Afri Tech Hub makes no representations or warranties in relation to the availability, accuracy, or completeness of the opportunities listed on this site.
-            </p>
-            <h2>Limitation of Liability</h2>
-            <p>
-              Afri Tech Hub will not be liable to you in relation to the contents of, or use of, or otherwise in connection with, this website for any indirect, special or consequential loss; or for any business losses, loss of revenue, income, profits or anticipated savings, loss of contracts or business relationships, or loss of reputation.
-            </p>
+      <section class="section" style="padding-top: 60px;">
+        <div class="container" style="max-width: 800px;">
+          <h1 style="font-size:32px; margin-bottom:20px;">Terms of Use</h1>
+          <div class="about-content-card" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow: var(--shadow-sm); line-height: 1.8; color:var(--text-secondary);">
+            <p style="margin-bottom:15px;">Last updated: June 28, 2026</p>
+            <p style="margin-bottom:15px;">By accessing Afri Tech Hub, you agree to these Terms of Use. Access is provided completely free of charge and "as is".</p>
+            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">User Constraints</h3>
+            <p style="margin-bottom:15px;">You may browse listings and apply. You must not attempt to breach admin security protocols, scrape database arrays maliciously, or submit spam messages through our contact channels.</p>
+            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">Liability Disclaimer</h3>
+            <p style="margin-bottom:15px;">While we curate and verify listings, Afri Tech Hub does not represent official sponsors or employers. We do not guarantee selection, and are not liable for any outcomes arising from external applications.</p>
           </div>
         </div>
       </section>

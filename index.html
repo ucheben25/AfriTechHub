@@ -112,6 +112,7 @@
             <li><a href="#categories" class="footer-link">Browse Categories</a></li>
             <li><a href="#faq" class="footer-link">Frequently Asked Questions</a></li>
             <li><a href="#contact" class="footer-link">Contact Support</a></li>
+            <li><a href="#admin-login" class="footer-link"><i class="fa-solid fa-lock" style="font-size: 0.85em; margin-right: 6px;"></i>Admin Panel</a></li>
           </ul>
         </div>
 
@@ -145,13 +146,13 @@
   </footer>
 
   <!-- ==========================================
-       FLOATING ACTIONS (WHATSAPP & ADD OPPORTUNITY)
+       FLOATING ACTIONS (WHATSAPP & SCROLL TO TOP)
        ========================================== -->
   <div class="floating-actions-container">
-    <!-- Floating Add Opportunity Button -->
-    <button id="floating-add-btn" class="floating-btn floating-add-post" aria-label="Add Opportunity">
-      <i class="fa-solid fa-plus"></i>
-      <span class="floating-tooltip">Post Opportunity</span>
+    <!-- Floating Scroll-to-Top Button -->
+    <button id="scroll-top-btn" class="floating-btn scroll-top" aria-label="Scroll to Top">
+      <i class="fa-solid fa-arrow-up"></i>
+      <span class="floating-tooltip">Scroll to Top</span>
     </button>
     
     <!-- Floating WhatsApp Community Link -->
@@ -159,93 +160,6 @@
       <i class="fa-brands fa-whatsapp"></i>
       <span class="floating-tooltip">Join WhatsApp Hub</span>
     </a>
-  </div>
-
-  <!-- ==========================================
-       MODAL: QUICK ADD OPPORTUNITY
-       ========================================== -->
-  <div class="modal-overlay" id="add-post-modal">
-    <div class="modal-window">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-bullhorn" style="color: var(--color-primary); margin-right: 10px;"></i>Post an Opportunity</h2>
-        <button class="modal-close" id="modal-close-btn" aria-label="Close Modal">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="add-opportunity-form">
-          <div class="form-group">
-            <label for="opp-title" class="form-label">Opportunity Title *</label>
-            <input type="text" id="opp-title" class="form-control" placeholder="e.g. Senior Software Engineer, Seed Capital Grant 2026" required>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="opp-company" class="form-label">Organization / Sponsor *</label>
-              <input type="text" id="opp-company" class="form-control" placeholder="e.g. Google, MTN, UNICEF" required>
-            </div>
-            <div class="form-group">
-              <label for="opp-category" class="form-label">Category *</label>
-              <select id="opp-category" class="form-control" required>
-                <option value="" disabled selected>Select category</option>
-                <option value="Jobs">Jobs</option>
-                <option value="Grants">Grants</option>
-                <option value="Scholarships">Scholarships</option>
-                <option value="Internships">Internships</option>
-                <option value="Business Funding">Business Funding</option>
-                <option value="Vacancies">Vacancies</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="opp-location" class="form-label">Location *</label>
-              <input type="text" id="opp-location" class="form-control" placeholder="e.g. Remote, Lagos (Nigeria), Kigali" required>
-            </div>
-            <div class="form-group">
-              <label for="opp-deadline" class="form-label">Application Deadline *</label>
-              <input type="date" id="opp-deadline" class="form-control" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="opp-short" class="form-label">Short Summary * (Max 150 chars)</label>
-            <input type="text" id="opp-short" class="form-control" placeholder="Brief summary to show in listings" maxlength="150" required>
-          </div>
-
-          <div class="form-group">
-            <label for="opp-desc" class="form-label">Full Opportunity Details *</label>
-            <textarea id="opp-desc" class="form-control" rows="4" placeholder="Detailed description of what the opportunity is about..." required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="opp-req" class="form-label">Key Requirements (One requirement per line) *</label>
-            <textarea id="opp-req" class="form-control" rows="3" placeholder="Requirement 1&#10;Requirement 2&#10;Requirement 3" required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="opp-ben" class="form-label">Key Benefits & Offerings (One benefit per line) *</label>
-            <textarea id="opp-ben" class="form-control" rows="3" placeholder="Benefit 1&#10;Benefit 2&#10;Benefit 3" required></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="opp-url" class="form-label">Application URL / Link *</label>
-              <input type="url" id="opp-url" class="form-control" placeholder="https://company.com/apply-link" required>
-            </div>
-            <div class="form-group">
-              <label for="opp-img-file" class="form-label">Upload Opportunity Image (Optional)</label>
-              <input type="file" id="opp-img-file" class="form-control" accept="image/*">
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
-            Publish Opportunity <i class="fa-solid fa-paper-plane" style="margin-left: 8px;"></i>
-          </button>
-        </form>
-      </div>
-    </div>
   </div>
 
   <!-- ==========================================
