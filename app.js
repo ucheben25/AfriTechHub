@@ -942,15 +942,15 @@ const App = {
   // ==========================================================================
 
   cardTemplate(opp) {
-    const formattedDeadline = opp.deadline === 'Rolling' ? 'Rolling Admission' : `Ends: ${opp.deadline}`;
-    const skillsBadges = opp.skills ? opp.skills.slice(0, 3).map(s => `<span class="card-skill-badge" style="font-size:10px; background:var(--bg-tertiary); padding:2px 8px; border-radius:50px; color:var(--text-secondary); font-weight:600;">${s}</span>`).join('') : '';
+    const formattedDeadline = opp.deadline === 'Rolling' ? 'Rolling' : opp.deadline;
+    const skillsBadges = opp.skills ? opp.skills.slice(0, 3).map(s => `<span class="card-skill-badge">${s}</span>`).join('') : '';
 
     return `
       <article class="opportunity-card animate-fade-in-up">
-        <div class="card-image-wrapper">
+        <div class="card-image-container">
           <img src="${opp.image}" alt="${opp.company} Cover" loading="lazy">
           <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
-          ${opp.remote ? `<span class="remote-badge" style="position:absolute; top:15px; left:15px; background:rgba(15,23,42,0.85); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:50px; backdrop-filter:blur(4px); text-transform:uppercase;">${opp.remote}</span>` : ''}
+          ${opp.remote ? `<span class="remote-badge">${opp.remote}</span>` : ''}
         </div>
         <div class="card-body">
           <div class="card-meta">
@@ -958,14 +958,17 @@ const App = {
             <span class="location"><i class="fa-solid fa-location-dot"></i> ${opp.location}</span>
           </div>
           <h3 class="card-title">${opp.title}</h3>
-          <p class="card-description">${opp.shortDescription}</p>
-          <div class="card-skills-strip" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; margin-bottom:12px;">
+          <p class="card-desc">${opp.shortDescription}</p>
+          <div class="card-skills-strip">
             ${skillsBadges}
           </div>
         </div>
         <div class="card-footer">
           <span class="deadline-timer"><i class="fa-solid fa-clock-rotate-left"></i> ${formattedDeadline}</span>
-          <a href="#post/${opp.id}" class="btn btn-outline btn-sm">Read More <i class="fa-solid fa-arrow-right"></i></a>
+          <div class="card-actions">
+            <a href="#post/${opp.id}" class="btn btn-secondary btn-sm" aria-label="Details for ${opp.title}">Details</a>
+            <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" aria-label="Apply for ${opp.title}">Apply <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          </div>
         </div>
       </article>
     `;
@@ -1048,14 +1051,14 @@ const App = {
 
       <!-- Featured Opportunities Section -->
       ${featuredOpps.length > 0 ? `
-      <section class="section" style="background-color: var(--bg-tertiary); transition: background-color var(--transition-normal);">
+      <section class="section section-alt">
         <div class="container">
-          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
-            <span class="subheading" style="color: var(--color-accent); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;"><i class="fa-solid fa-star"></i> Featured Listings</span>
+          <div class="section-header text-center">
+            <span class="subheading subheading-accent"><i class="fa-solid fa-star"></i> Featured Listings</span>
             <h2>Top Pick Opportunities</h2>
             <p>Hand-picked opportunities offering top benefits, fully-funded packages, or global internships.</p>
           </div>
-          <div class="opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+          <div class="opportunities-grid">
             ${featuredOpps.map(opp => this.cardTemplate(opp)).join('')}
           </div>
         </div>
@@ -1067,26 +1070,26 @@ const App = {
         <div class="container">
           <div class="section-header">
             <div>
-              <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Recently Updated</span>
+              <span class="subheading">Recently Updated</span>
               <h2>Latest Opportunities</h2>
             </div>
             <a href="#opportunities" class="btn btn-outline">Explore Directory <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i></a>
           </div>
-          <div class="opportunities-grid" id="home-opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+          <div class="opportunities-grid" id="home-opportunities-grid">
             ${latestOpps.map(opp => this.cardTemplate(opp)).join('')}
           </div>
         </div>
       </section>
 
       <!-- Popular Categories Grid Section -->
-      <section class="section" style="background-color: var(--bg-tertiary); transition: background-color var(--transition-normal);">
+      <section class="section section-alt">
         <div class="container">
-          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
-            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Structured Categories</span>
+          <div class="section-header text-center">
+            <span class="subheading">Structured Categories</span>
             <h2>Search by Category</h2>
             <p>Explore resources categorized by application types to simplify your journey.</p>
           </div>
-          <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px;">
+          <div class="categories-grid">
             ${categoriesGrid}
           </div>
         </div>
@@ -1095,17 +1098,17 @@ const App = {
       <!-- Newsletter Subsection -->
       <section class="section">
         <div class="container">
-          <div class="newsletter-card" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); border-radius: 24px; padding: 60px 40px; color:#fff; display:grid; grid-template-columns: 1.2fr 1fr; gap:40px; align-items:center;">
+          <div class="newsletter-card">
             <div class="newsletter-info">
-              <h2 style="color:#fff; font-size:32px; margin-bottom:12px;">Get Weekly Opportunities Direct to Your Inbox</h2>
-              <p style="color:rgba(255,255,255,0.85); font-size:15px; line-height:1.6;">Stay updated on newly listed remote entry-level software engineer jobs, scholarships, fellowships, and VC grants. Completely free. Unsubscribe anytime.</p>
+              <h2>Get Weekly Opportunities Direct to Your Inbox</h2>
+              <p class="newsletter-desc">Stay updated on newly listed remote entry-level software engineer jobs, scholarships, fellowships, and VC grants. Completely free. Unsubscribe anytime.</p>
             </div>
-            <form id="home-newsletter-form" style="display:flex; flex-direction:column; gap:12px; width:100%;">
-              <div style="display:flex; gap:10px; background:rgba(255,255,255,0.15); padding:6px; border-radius:50px; border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(4px);">
-                <input type="email" placeholder="Your professional email address" style="width:100%; border:none; background:none; padding:12px 20px; color:#fff; outline:none;" required>
-                <button type="submit" class="btn btn-primary" style="background:#fff; color:var(--text-primary); border-radius:50px; font-weight:700; padding:12px 24px;">Subscribe</button>
+            <form id="home-newsletter-form" class="newsletter-form-container">
+              <div class="newsletter-form-wrapper">
+                <input type="email" class="newsletter-input" placeholder="Your professional email address" required>
+                <button type="submit" class="btn newsletter-btn">Subscribe</button>
               </div>
-              <p style="font-size:11px; color:rgba(255,255,255,0.7); text-align:center;">We protect your privacy. Zero spam. Safe unsubscribes.</p>
+              <p class="newsletter-note">We protect your privacy. Zero spam. Safe unsubscribes.</p>
             </form>
           </div>
         </div>
@@ -1223,12 +1226,12 @@ const App = {
           </div>
 
           <!-- Opportunities Card Grid -->
-          <div class="opportunities-grid" id="opp-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; margin-bottom: 40px;">
+          <div class="opportunities-grid" id="opp-grid">
             <!-- Filled dynamically by updateList -->
           </div>
 
           <!-- Load More Pagination -->
-          <div style="display: flex; justify-content: center; margin-top: 20px;">
+          <div class="flex-center mt-4">
             <button class="btn btn-outline" id="load-more-btn" style="display: none;"><i class="fa-solid fa-spinner" style="margin-right:8px;"></i> Load More Opportunities</button>
           </div>
         </div>
@@ -1249,14 +1252,14 @@ const App = {
     `).join('');
 
     return `
-      <section class="section" style="padding-top:60px;">
+      <section class="section">
         <div class="container">
-          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
-            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Browse Structures</span>
+          <div class="section-header text-center">
+            <span class="subheading">Browse Structures</span>
             <h2>Opportunity Categories</h2>
             <p>Discover scholarships, business accelerators, fellowships, and technical roles catalogued for easy discovery.</p>
           </div>
-          <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px;">
+          <div class="categories-grid">
             ${list}
           </div>
         </div>
@@ -1327,39 +1330,39 @@ const App = {
 
   templateContact() {
     return `
-      <section class="section" style="padding-top: 60px;">
-        <div class="container" style="max-width: 900px;">
-          <div class="section-header" style="text-align:center; margin-bottom:50px;">
-            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Get in Touch</span>
+      <section class="section">
+        <div class="container container-narrow">
+          <div class="section-header text-center">
+            <span class="subheading">Get in Touch</span>
             <h2>Contact Afri Tech Hub</h2>
             <p>Reach out to submit vacancy lists, partnership proposals, or report listing anomalies.</p>
           </div>
 
-          <div class="contact-grid" style="display:grid; grid-template-columns:1fr 1.5fr; gap:40px; align-items:start;">
+          <div class="contact-grid">
             <!-- Contact Card Details -->
-            <div class="contact-info-card" style="background-color:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:30px; box-shadow:var(--shadow-sm);">
-              <h3 style="margin-bottom:20px;">Contact Details</h3>
-              <div class="footer-contact-item" style="margin-bottom:15px; display:flex; gap:12px; align-items:center;">
-                <i class="fa-solid fa-location-dot" style="color:var(--color-primary);"></i>
+            <div class="contact-info-card">
+              <h3>Contact Details</h3>
+              <div class="footer-contact-item">
+                <i class="fa-solid fa-location-dot"></i>
                 <span>Victoria Island, Lagos, Nigeria</span>
               </div>
-              <div class="footer-contact-item" style="margin-bottom:15px; display:flex; gap:12px; align-items:center;">
-                <i class="fa-solid fa-envelope" style="color:var(--color-primary);"></i>
+              <div class="footer-contact-item">
+                <i class="fa-solid fa-envelope"></i>
                 <span>info@afritechhub.org</span>
               </div>
-              <div class="footer-contact-item" style="margin-bottom:25px; display:flex; gap:12px; align-items:center;">
-                <i class="fa-solid fa-phone" style="color:var(--color-primary);"></i>
+              <div class="footer-contact-item">
+                <i class="fa-solid fa-phone"></i>
                 <span>+2349159701354</span>
               </div>
-              <div class="social-links" style="display:flex; gap:10px;">
-                <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" style="background:var(--bg-tertiary); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-brands fa-x-twitter"></i></a>
-                <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" style="background:var(--bg-tertiary); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-brands fa-linkedin-in"></i></a>
-                <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" style="background:var(--bg-tertiary); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-brands fa-facebook-f"></i></a>
+              <div class="social-links">
+                <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
               </div>
             </div>
 
             <!-- Form -->
-            <div class="contact-form-card" style="background-color:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow:var(--shadow-sm);">
+            <div class="contact-form-card">
               <form id="contact-form">
                 <div class="admin-form-group">
                   <label class="form-label" for="contact-name">Full Name *</label>
@@ -1377,7 +1380,7 @@ const App = {
                   <label class="form-label" for="contact-message">Message *</label>
                   <textarea id="contact-message" class="admin-form-control" rows="5" placeholder="Explain your message in detail..." required></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Inquiry <i class="fa-solid fa-paper-plane" style="margin-left:8px;"></i></button>
+                <button type="submit" class="btn btn-primary btn-submit">Submit Inquiry <i class="fa-solid fa-paper-plane"></i></button>
               </form>
             </div>
           </div>
@@ -1410,109 +1413,152 @@ const App = {
     const relatedGrid = related.map(o => this.cardTemplate(o)).join('');
 
     return `
-      <section class="section" style="padding-top:40px;">
+  templateSinglePost(postId) {
+    const opp = DataStore.getOpportunities(true).find(o => o.id === postId);
+    if (!opp) {
+      return `
+        <div class="container text-center" style="padding:100px 24px;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 50px; color: var(--color-accent); margin-bottom: 20px;"></i>
+          <h2>Opportunity Not Found</h2>
+          <p>This posting may have expired, been archived, or deleted by the administrator.</p>
+          <a href="#opportunities" class="btn btn-primary" style="margin-top:20px;">Back to Directory</a>
+        </div>
+      `;
+    }
+
+    const requirementsList = opp.requirements.map(req => `<li><i class="fa-regular fa-square-check"></i> ${req}</li>`).join('');
+    const benefitsList = opp.benefits.map(ben => `<li><i class="fa-regular fa-star"></i> ${ben}</li>`).join('');
+    const skillsBadges = opp.skills ? opp.skills.map(s => `<span class="badge-skill">${s}</span>`).join('') : '';
+
+    // Related Listings
+    const related = DataStore.getOpportunities()
+      .filter(o => o.category.toLowerCase() === opp.category.toLowerCase() && o.id !== opp.id)
+      .slice(0, 3);
+    const relatedGrid = related.map(o => this.cardTemplate(o)).join('');
+
+    return `
+      <section class="post-detail-section">
         <div class="container">
           <!-- Back Link -->
-          <a href="#opportunities" class="back-link" style="display:inline-flex; align-items:center; gap:8px; font-weight:700; color:var(--text-secondary); margin-bottom:30px;"><i class="fa-solid fa-arrow-left"></i> Back to Listings</a>
+          <a href="#opportunities" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Listings</a>
           
           <!-- Detail Grid Layout -->
-          <div class="opp-details-layout" style="display:grid; grid-template-columns:1.8fr 1fr; gap:40px; align-items:start;">
+          <div class="post-detail-grid">
             <!-- Left Side Core Content -->
-            <div class="opp-details-core">
-              <div class="opp-details-header" style="margin-bottom:35px;">
-                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;">
-                  <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
-                  ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ''}
-                  ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ''}
+            <div class="post-main-content">
+              <div class="post-header-meta">
+                <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
+                ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ''}
+                ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ''}
+              </div>
+              <h1 class="post-title">${opp.title}</h1>
+              
+              <div class="post-meta-details-strip">
+                <div class="strip-item">
+                  <div class="strip-icon"><i class="fa-solid fa-building"></i></div>
+                  <div class="strip-info">
+                    <h5>Organization</h5>
+                    <p>${opp.company}</p>
+                  </div>
                 </div>
-                <h1 style="font-size:32px; margin-bottom:15px;">${opp.title}</h1>
-                <div style="display:flex; flex-wrap:wrap; gap:20px; color:var(--text-muted); font-size:14px;">
-                  <span><i class="fa-solid fa-building"></i> ${opp.company}</span>
-                  <span><i class="fa-solid fa-location-dot"></i> ${opp.location}</span>
-                  <span><i class="fa-solid fa-calendar"></i> Posted: ${opp.date}</span>
+                <div class="strip-item">
+                  <div class="strip-icon"><i class="fa-solid fa-location-dot"></i></div>
+                  <div class="strip-info">
+                    <h5>Location</h5>
+                    <p>${opp.location}</p>
+                  </div>
+                </div>
+                <div class="strip-item">
+                  <div class="strip-icon"><i class="fa-solid fa-calendar"></i></div>
+                  <div class="strip-info">
+                    <h5>Date Posted</h5>
+                    <p>${opp.date}</p>
+                  </div>
                 </div>
               </div>
 
               <!-- Banner Cover Image -->
-              <div style="border-radius:24px; overflow:hidden; margin-bottom:40px; height:350px; border: 1px solid var(--border-color);">
-                <img src="${opp.image}" alt="${opp.company} Banner" style="width:100%; height:100%; object-fit:cover;">
+              <div class="post-detail-image-container">
+                <img src="${opp.image}" alt="${opp.company} Banner">
               </div>
 
-              <!-- Description -->
-              <div class="content-block" style="margin-bottom:40px; line-height:1.75;">
-                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Detailed Description</h3>
-                <p style="white-space:pre-wrap; color:var(--text-secondary);">${opp.description}</p>
-              </div>
-
-              <!-- Requirements -->
-              <div class="content-block" style="margin-bottom:40px;">
-                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Eligibility & Requirements</h3>
-                <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; color:var(--text-secondary);">
-                  ${requirementsList}
-                </ul>
-              </div>
-
-              <!-- Benefits -->
-              <div class="content-block" style="margin-bottom:40px;">
-                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Benefits & Packages</h3>
-                <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; color:var(--text-secondary);">
-                  ${benefitsList}
-                </ul>
-              </div>
-
-              <!-- Skills tags -->
-              ${skillsBadges ? `
-              <div class="content-block" style="margin-bottom:40px;">
-                <h3 style="font-size:20px; border-left:4px solid var(--color-primary); padding-left:12px; margin-bottom:15px;">Key Skills Target</h3>
-                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
-                  ${skillsBadges}
+              <div class="post-body-content">
+                <!-- Description -->
+                <div class="content-block">
+                  <h3>Detailed Description</h3>
+                  <p>${opp.description}</p>
                 </div>
+
+                <!-- Requirements -->
+                <div class="content-block">
+                  <h3>Eligibility & Requirements</h3>
+                  <ul class="custom-list">
+                    ${requirementsList}
+                  </ul>
+                </div>
+
+                <!-- Benefits -->
+                <div class="content-block">
+                  <h3>Benefits & Packages</h3>
+                  <ul class="custom-list">
+                    ${benefitsList}
+                  </ul>
+                </div>
+
+                <!-- Skills tags -->
+                ${skillsBadges ? `
+                <div class="content-block">
+                  <h3>Key Skills Target</h3>
+                  <div class="detail-skills-container">
+                    ${skillsBadges}
+                  </div>
+                </div>
+                ` : ''}
               </div>
-              ` : ''}
             </div>
 
             <!-- Right Side Sidebar details -->
-            <aside class="opp-details-sidebar" style="position:sticky; top:110px;">
-              <div class="sidebar-summary-card" style="background-color:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:30px; box-shadow:var(--shadow-sm);">
-                <h3 style="margin-bottom:20px; font-size:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Listing Summary</h3>
+            <aside class="post-sidebar-sticky">
+              <div class="apply-card-box">
+                <h3 class="apply-card-title">Listing Summary</h3>
                 
-                <table style="width:100%; font-size:14px; margin-bottom:30px; border-collapse:collapse;">
-                  <tr style="border-bottom:1px solid var(--border-color);">
-                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-industry" style="margin-right:10px;"></i> Organization</td>
-                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.company}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid var(--border-color);">
-                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-list" style="margin-right:10px;"></i> Category</td>
-                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.category}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid var(--border-color);">
-                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-layer-group" style="margin-right:10px;"></i> Target level</td>
-                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.experienceLevel || 'Graduate'}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid var(--border-color);">
-                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-map-location-dot" style="margin-right:10px;"></i> Workplace</td>
-                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.remote || 'Onsite'}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid var(--border-color);">
-                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-earth-africa" style="margin-right:10px;"></i> Country</td>
-                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--text-primary);">${opp.country || 'Global'}</td>
+                <table class="summary-table">
+                  <tr>
+                    <td><i class="fa-solid fa-industry"></i> Organization</td>
+                    <td>${opp.company}</td>
                   </tr>
                   <tr>
-                    <td style="padding:12px 0; color:var(--text-muted); font-weight:600;"><i class="fa-solid fa-calendar-xmark" style="margin-right:10px;"></i> Deadline</td>
-                    <td style="padding:12px 0; text-align:right; font-weight:700; color:var(--color-accent);">${opp.deadline === 'Rolling' ? 'Rolling Admission' : opp.deadline}</td>
+                    <td><i class="fa-solid fa-list"></i> Category</td>
+                    <td>${opp.category}</td>
+                  </tr>
+                  <tr>
+                    <td><i class="fa-solid fa-layer-group"></i> Target level</td>
+                    <td>${opp.experienceLevel || 'Graduate'}</td>
+                  </tr>
+                  <tr>
+                    <td><i class="fa-solid fa-map-location-dot"></i> Workplace</td>
+                    <td>${opp.remote || 'Onsite'}</td>
+                  </tr>
+                  <tr>
+                    <td><i class="fa-solid fa-earth-africa"></i> Country</td>
+                    <td>${opp.country || 'Global'}</td>
+                  </tr>
+                  <tr class="deadline-row">
+                    <td><i class="fa-solid fa-calendar-xmark"></i> Deadline</td>
+                    <td>${opp.deadline === 'Rolling' ? 'Rolling' : opp.deadline}</td>
                   </tr>
                 </table>
 
-                <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width:100%; text-align:center; padding:15px 0; border-radius:12px; font-weight:700; display:block; margin-bottom:20px; font-size:15px;">Apply on Official Site <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:8px;"></i></a>
+                <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-now">Apply on Official Site <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
 
                 <!-- Share widget -->
-                <div style="border-top:1px solid var(--border-color); padding-top:20px;">
-                  <h4 style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; letter-spacing:0.5px;">Share Opportunity</h4>
-                  <div style="display:flex; gap:10px; justify-content:center;">
-                    <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(opp.title)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Share on Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + ' ' + window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-                    <button class="btn btn-outline" id="share-copy-link" style="padding:8px 12px; font-size:14px; border-radius:8px;" aria-label="Copy Link"><i class="fa-solid fa-copy"></i></button>
+                <div class="share-strip">
+                  <span class="share-label">Share:</span>
+                  <div class="share-icons">
+                    <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(opp.title)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + ' ' + window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                    <button class="btn btn-outline btn-share" id="share-copy-link" aria-label="Copy Link"><i class="fa-solid fa-copy"></i></button>
                   </div>
                 </div>
               </div>
@@ -1521,9 +1567,9 @@ const App = {
           
           <!-- Related Opportunities Section -->
           ${relatedGrid ? `
-          <div style="margin-top:80px; border-top:1px solid var(--border-color); padding-top:60px;">
-            <h3 style="font-size:24px; margin-bottom:30px;"><i class="fa-solid fa-cubes-stacked" style="color:var(--color-primary); margin-right:10px;"></i> Related Listings</h3>
-            <div class="opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+          <div class="related-listings-section">
+            <h3><i class="fa-solid fa-cubes-stacked"></i> Related Listings</h3>
+            <div class="opportunities-grid">
               ${relatedGrid}
             </div>
           </div>
@@ -2016,16 +2062,16 @@ const App = {
 
   templatePrivacy() {
     return `
-      <section class="section" style="padding-top: 60px;">
-        <div class="container" style="max-width: 800px;">
-          <h1 style="font-size:32px; margin-bottom:20px;">Privacy Policy</h1>
-          <div class="about-content-card" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow: var(--shadow-sm); line-height: 1.8; color:var(--text-secondary);">
-            <p style="margin-bottom:15px;">Last updated: June 28, 2026</p>
-            <p style="margin-bottom:15px;">Afri Tech Hub operates an open-access platform. We do not require visitors to register, sign up, or login to use our directory. Thus, we do not collect personal profiles, browser habits, or tracking logs.</p>
-            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">Information We Collect</h3>
-            <p style="margin-bottom:15px;">We only collect name, email address, and message bodies explicitly submitted through our Contact Form or Newsletter Signup box. This data is strictly used to address support inquiries and send weekly opportunity roundups.</p>
-            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">Third-Party Links</h3>
-            <p style="margin-bottom:15px;">Our platform indexes external links leading to official application portals. We do not control and are not liable for the privacy policies of external sites. We advise checking their terms before applying.</p>
+      <section class="reading-section">
+        <div class="reading-container">
+          <h1>Privacy Policy</h1>
+          <div class="reading-meta">Last updated: June 28, 2026</div>
+          <div class="reading-content">
+            <p>Afri Tech Hub operates an open-access platform. We do not require visitors to register, sign up, or login to use our directory. Thus, we do not collect personal profiles, browser habits, or tracking logs.</p>
+            <h3>Information We Collect</h3>
+            <p>We only collect name, email address, and message bodies explicitly submitted through our Contact Form or Newsletter Signup box. This data is strictly used to address support inquiries and send weekly opportunity roundups.</p>
+            <h3>Third-Party Links</h3>
+            <p>Our platform indexes external links leading to official application portals. We do not control and are not liable for the privacy policies of external sites. We advise checking their terms before applying.</p>
           </div>
         </div>
       </section>
@@ -2034,16 +2080,16 @@ const App = {
 
   templateTerms() {
     return `
-      <section class="section" style="padding-top: 60px;">
-        <div class="container" style="max-width: 800px;">
-          <h1 style="font-size:32px; margin-bottom:20px;">Terms of Use</h1>
-          <div class="about-content-card" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow: var(--shadow-sm); line-height: 1.8; color:var(--text-secondary);">
-            <p style="margin-bottom:15px;">Last updated: June 28, 2026</p>
-            <p style="margin-bottom:15px;">By accessing Afri Tech Hub, you agree to these Terms of Use. Access is provided completely free of charge and "as is".</p>
-            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">User Constraints</h3>
-            <p style="margin-bottom:15px;">You may browse listings and apply. You must not attempt to breach admin security protocols, scrape database arrays maliciously, or submit spam messages through our contact channels.</p>
-            <h3 style="color:var(--text-primary); margin-top:30px; margin-bottom:10px;">Liability Disclaimer</h3>
-            <p style="margin-bottom:15px;">While we curate and verify listings, Afri Tech Hub does not represent official sponsors or employers. We do not guarantee selection, and are not liable for any outcomes arising from external applications.</p>
+      <section class="reading-section">
+        <div class="reading-container">
+          <h1>Terms of Use</h1>
+          <div class="reading-meta">Last updated: June 28, 2026</div>
+          <div class="reading-content">
+            <p>By accessing Afri Tech Hub, you agree to these Terms of Use. Access is provided completely free of charge and "as is".</p>
+            <h3>User Constraints</h3>
+            <p>You may browse listings and apply. You must not attempt to breach admin security protocols, scrape database arrays maliciously, or submit spam messages through our contact channels.</p>
+            <h3>Liability Disclaimer</h3>
+            <p>While we curate and verify listings, Afri Tech Hub does not represent official sponsors or employers. We do not guarantee selection, and are not liable for any outcomes arising from external applications.</p>
           </div>
         </div>
       </section>
