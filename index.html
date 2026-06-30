@@ -12,7 +12,7 @@
   <title>Afri Tech Hub | Empowering African Entrepreneurs & Youth</title>
   
   <!-- Website Favicon / Browser Tab Icon -->
-  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  <link rel="icon" type="image/jpeg" href="assets/images/logos/logo.jpg">
   
   <!-- FontAwesome for modern icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -29,7 +29,7 @@
     <div class="container navbar">
       <!-- Logo / Brand -->
       <a href="#home" class="brand" id="nav-brand">
-        <img src="logo.jpg" alt="Afri Tech Hub Logo" class="brand-logo-img">
+        <img src="assets/images/logos/logo.jpg" alt="Afri Tech Hub Logo" class="brand-logo-img">
         <div class="brand-text-container">
           <span class="brand-name">Afri Tech Hub</span>
           <span class="brand-tagline">Empowering African Entrepreneurs</span>
@@ -51,10 +51,16 @@
         <button id="theme-toggle" class="icon-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
           <i class="fa-solid fa-moon" id="theme-icon"></i>
         </button>
-        <button id="menu-toggle" class="icon-btn menu-toggle" title="Toggle Navigation Menu" aria-label="Toggle Navigation">
-          <i class="fa-solid fa-bars"></i>
+        <button id="menu-toggle" class="menu-toggle icon-btn" title="Toggle Navigation Menu" aria-label="Toggle Navigation">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
         </button>
       </div>
+    </div>
+    <!-- Scroll Progress Indicator Bar -->
+    <div class="scroll-progress-container">
+      <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
     </div>
   </header>
 
@@ -74,7 +80,7 @@
         <!-- Brand / About Column -->
         <div class="footer-col">
           <div class="brand footer-brand">
-            <img src="logo.jpg" alt="Afri Tech Hub Logo" class="brand-logo-img">
+            <img src="assets/images/logos/logo.jpg" alt="Afri Tech Hub Logo" class="brand-logo-img">
             <div class="brand-text-container">
               <span class="brand-name">Afri Tech Hub</span>
               <span class="brand-tagline">Empowering African Entrepreneurs</span>
@@ -112,7 +118,7 @@
             <li><a href="#categories" class="footer-link">Browse Categories</a></li>
             <li><a href="#faq" class="footer-link">Frequently Asked Questions</a></li>
             <li><a href="#contact" class="footer-link">Contact Support</a></li>
-            <li><a href="#admin-login" class="footer-link"><i class="fa-solid fa-lock" style="font-size: 0.85em; margin-right: 6px;"></i>Admin Panel</a></li>
+            <li><a href="#admin-login" class="footer-link"><i class="fa-solid fa-lock footer-lock-icon"></i>Admin Panel</a></li>
           </ul>
         </div>
 
@@ -129,14 +135,15 @@
           </div>
           <div class="footer-contact-item">
             <i class="fa-solid fa-phone"></i>
-            <span>+2349159701354</span>
+            <span>+234 915 970 1354</span>
           </div>
         </div>
       </div>
 
       <!-- Footer Bottom Links & Copyright -->
       <div class="footer-bottom">
-        <p>&copy; 2026 Afri Tech Hub. All rights reserved. Built for community growth.</p>
+        <p>&copy; 2026. Afri Tech Hub. All rights reserved. Built for community growth.</p>
+        <p>Theme By <a href="https://linktr.ee/_ucheben">UcheBen</a></p>
         <div class="footer-bottom-links">
           <a href="#privacy" class="footer-bottom-link">Privacy Policy</a>
           <a href="#terms" class="footer-bottom-link">Terms of Use</a>
@@ -158,7 +165,7 @@
     <!-- Floating WhatsApp Community Link -->
     <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="floating-btn floating-whatsapp" aria-label="Join WhatsApp Community">
       <i class="fa-brands fa-whatsapp"></i>
-      <span class="floating-tooltip">Join WhatsApp Hub</span>
+      <span class="floating-tooltip">Join WhatsApp Community</span>
     </a>
   </div>
 

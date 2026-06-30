@@ -265,6 +265,23 @@ ul {
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 
+.scroll-progress-container {
+  width: 100%;
+  height: 3px;
+  background-color: transparent;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+}
+
+.scroll-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  transition: width 0.1s ease-out;
+}
+
 .navbar {
   display: flex;
   align-items: center;
@@ -385,6 +402,29 @@ ul {
 
 .menu-toggle {
   display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001;
+  position: relative;
+}
+
+.menu-toggle .hamburger-line {
+  width: 100%;
+  height: 2px;
+  background-color: var(--text-primary);
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  transform-origin: left center;
+}
+
+.menu-toggle:focus {
+  outline: none;
 }
 
 /* --- Footer --- */
@@ -462,6 +502,11 @@ ul {
   transition: padding-left var(--transition-fast), color var(--transition-fast);
 }
 
+.footer-lock-icon {
+  font-size: 0.85em;
+  margin-right: 6px;
+}
+
 .footer-contact-item {
   display: flex;
   gap: 12px;
@@ -507,6 +552,10 @@ ul {
   font-size: var(--font-size-small);
   transition: all var(--transition-fast);
   white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.97);
 }
 
 .btn-primary {
@@ -562,6 +611,87 @@ ul {
   padding: 0 var(--space-2);
   font-size: var(--font-size-caption);
   border-radius: var(--border-radius-sm);
+}
+
+.btn-whatsapp {
+  background-color: #25d366 !important;
+  border-color: #25d366 !important;
+  color: #ffffff !important;
+}
+
+.btn-whatsapp:hover {
+  background-color: #20ba5a !important;
+  border-color: #20ba5a !important;
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3) !important;
+}
+
+/* --- Filter Pills --- */
+.home-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+
+.hero-search-input {
+  border-radius: 50px !important;
+  padding: 0 24px 0 50px !important;
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.hero-search-btn {
+  border-radius: 50px !important;
+  padding: 0 30px !important;
+}
+
+.main-visual-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-lg);
+}
+
+/* --- About & FAQ Layout Cards --- */
+.about-content-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  line-height: var(--line-height-body);
+}
+
+.about-content-card p {
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.about-content-card h3 {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.about-content-card h3 i {
+  color: var(--color-primary);
+  margin-right: 10px;
+}
+
+.faq-search-wrapper {
+  margin-bottom: var(--space-4);
+}
+
+.faq-search-input {
+  border-radius: 50px !important;
+  background-color: var(--bg-card) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--border-color) !important;
+  height: 48px !important;
+  padding: 0 24px !important;
+  width: 100%;
 }
 
 /* --- Card Styles --- */
@@ -2021,15 +2151,79 @@ ul {
 }
 
 /* Skeleton Loading styles */
+.skeleton-container {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-6);
+}
+
+.skeleton-header-title {
+  height: 40px;
+  width: 300px;
+  max-width: 80%;
+  margin-bottom: var(--space-5);
+}
+
 .skeleton-card {
   pointer-events: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background-color: var(--bg-card);
+}
+
+.skeleton-image {
+  height: 200px;
+  width: 100%;
+  border-radius: 0;
+}
+
+.skeleton-body {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton-meta {
+  height: 16px;
+  width: 120px;
+  margin-bottom: var(--space-1);
+}
+
+.skeleton-title {
+  height: 24px;
+  width: 100%;
+}
+
+.skeleton-text {
+  height: 16px;
+  width: 75%;
+  margin-bottom: var(--space-2);
+}
+
+.skeleton-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+.skeleton-timer {
+  height: 16px;
+  width: 80px;
+}
+
+.skeleton-btn {
+  height: 36px;
+  width: 100px;
+  border-radius: var(--border-radius-sm);
 }
 
 .skeleton-box {
   background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-tertiary) 50%, var(--border-color) 75%);
   background-size: 200% 100%;
   animation: loadingSkeleton 1.5s infinite;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
 }
 
 @keyframes loadingSkeleton {
@@ -2090,7 +2284,15 @@ ul {
   }
   .menu-toggle {
     display: flex;
-    font-size: 22px;
+  }
+  .menu-toggle.active .hamburger-line:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+  .menu-toggle.active .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+  .menu-toggle.active .hamburger-line:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
   }
   .nav-menu {
     position: fixed;
@@ -2996,6 +3198,31 @@ textarea.admin-form-control {
     grid-template-columns: 1fr;
     text-align: center;
     padding: var(--space-4) var(--space-3);
+  }
+}
+
+/* Reduced Motion Overrides */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+  
+  .opportunity-card:hover {
+    transform: none !important;
+  }
+  
+  .opportunity-card:hover .card-image-container img {
+    transform: none !important;
+  }
+  
+  .btn:active, .social-link:active {
+    transform: none !important;
   }
 }
 

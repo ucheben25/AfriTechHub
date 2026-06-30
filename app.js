@@ -30,7 +30,8 @@ const App = {
     navMenu: document.getElementById('nav-menu'),
     scrollTopBtn: document.getElementById('scroll-top-btn'),
     toast: document.getElementById('toast-alert'),
-    toastMsg: document.getElementById('toast-message')
+    toastMsg: document.getElementById('toast-message'),
+    progressBar: document.getElementById('scroll-progress-bar')
   },
 
   init() {
@@ -62,28 +63,32 @@ const App = {
     // Mobile nav toggle
     this.nodes.menuToggle.addEventListener('click', () => {
       this.nodes.navMenu.classList.toggle('active');
-      const icon = this.nodes.menuToggle.querySelector('i');
-      if (this.nodes.navMenu.classList.contains('active')) {
-        icon.className = 'fa-solid fa-xmark';
-      } else {
-        icon.className = 'fa-solid fa-bars';
-      }
+      this.nodes.menuToggle.classList.toggle('active');
     });
 
     // Close mobile nav when clicking a link
     this.nodes.navMenu.addEventListener('click', (e) => {
       if (e.target.classList.contains('nav-link')) {
         this.nodes.navMenu.classList.remove('active');
-        this.nodes.menuToggle.querySelector('i').className = 'fa-solid fa-bars';
+        this.nodes.menuToggle.classList.remove('active');
       }
     });
 
-    // Scroll to Top visibility toggle
+    // Scroll events: scroll-to-top visibility and progress calculation
     window.addEventListener('scroll', () => {
+      // Scroll to Top visibility toggle
       if (window.scrollY > 300) {
         this.nodes.scrollTopBtn.classList.add('visible');
       } else {
         this.nodes.scrollTopBtn.classList.remove('visible');
+      }
+
+      // Progress bar calculation
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+      if (this.nodes.progressBar) {
+        this.nodes.progressBar.style.width = scrolled + '%';
       }
     });
 
@@ -293,19 +298,19 @@ const App = {
 
   renderSkeleton() {
     this.nodes.content.innerHTML = `
-      <div class="container animate-fade-in" style="padding-top: 60px; padding-bottom: 60px;">
-        <div class="skeleton-box" style="height: 40px; width: 300px; margin-bottom: 45px; background: #e2e8f0; border-radius: 8px;"></div>
-        <div class="opportunities-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+      <div class="container skeleton-container">
+        <div class="skeleton-box skeleton-header-title"></div>
+        <div class="opportunities-grid">
           ${Array(3).fill().map(() => `
-            <div class="opportunity-card skeleton-card" style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-              <div class="skeleton-box" style="height: 200px; width: 100%; background: #e2e8f0;"></div>
-              <div style="padding: 24px;">
-                <div class="skeleton-box" style="height: 15px; width: 100px; margin-bottom: 15px; background: #e2e8f0; border-radius: 4px;"></div>
-                <div class="skeleton-box" style="height: 25px; width: 100%; margin-bottom: 10px; background: #e2e8f0; border-radius: 4px;"></div>
-                <div class="skeleton-box" style="height: 15px; width: 75%; margin-bottom: 20px; background: #e2e8f0; border-radius: 4px;"></div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div class="skeleton-box" style="height: 15px; width: 80px; background: #e2e8f0; border-radius: 4px;"></div>
-                  <div class="skeleton-box" style="height: 35px; width: 100px; background: #e2e8f0; border-radius: 8px;"></div>
+            <div class="opportunity-card skeleton-card">
+              <div class="skeleton-box skeleton-image"></div>
+              <div class="skeleton-body">
+                <div class="skeleton-box skeleton-meta"></div>
+                <div class="skeleton-box skeleton-title"></div>
+                <div class="skeleton-box skeleton-text"></div>
+                <div class="skeleton-footer">
+                  <div class="skeleton-box skeleton-timer"></div>
+                  <div class="skeleton-box skeleton-btn"></div>
                 </div>
               </div>
             </div>
@@ -996,7 +1001,7 @@ const App = {
         <div class="container hero-grid">
           <div class="hero-content">
             <div class="hero-tag-badge animate-fade-in-up">
-              <i class="fa-solid fa-certificate" style="color: var(--color-accent);"></i> No Signups, No Accounts. 100% Free & Open Access
+              <i class="fa-solid fa-certificate color-accent"></i> No Signups, No Accounts. 100% Free & Open Access
             </div>
             <h1 class="hero-title animate-fade-in-up" style="animation-delay: 0.1s;">
               Accelerating African <span class="highlight">Success</span>.
@@ -1007,24 +1012,24 @@ const App = {
             
             <!-- Quick Search Bar -->
             <div class="hero-search-container animate-fade-in-up" style="animation-delay: 0.3s;">
-              <div class="filter-search-wrapper" style="width: 100%;">
-                <i class="fa-solid fa-magnifying-glass" style="left: 20px;"></i>
-                <input type="text" id="home-search" class="admin-form-control" style="border-radius: 50px; padding: 18px 24px 18px 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);" placeholder="Search by roles, skills, or companies...">
+              <div class="filter-search-wrapper hero-search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="home-search" class="admin-form-control hero-search-input" placeholder="Search by roles, skills, or companies...">
               </div>
-              <button class="btn btn-primary" id="home-search-btn" style="border-radius: 50px; padding: 14px 30px;">Search</button>
+              <button class="btn btn-primary hero-search-btn" id="home-search-btn">Search</button>
             </div>
 
             <!-- Call to Actions -->
-            <div class="hero-ctas animate-fade-in-up" style="animation-delay: 0.4s; margin-top:30px;">
-              <a href="#opportunities" class="btn btn-primary">Browse All Opportunities <i class="fa-solid fa-circle-chevron-right" style="margin-left: 8px;"></i></a>
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: #25d366; color: #25d366;"><i class="fa-brands fa-whatsapp" style="margin-right: 8px; font-size:1.25em;"></i> Join WhatsApp Hub</a>
+            <div class="hero-ctas animate-fade-in-up" style="animation-delay: 0.4s;">
+              <a href="#opportunities" class="btn btn-primary">Browse All Opportunities <i class="fa-solid fa-circle-chevron-right"></i></a>
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Join WhatsApp Hub</a>
             </div>
           </div>
           
           <div class="hero-visual animate-fade-in-up" style="animation-delay: 0.2s;">
             <!-- Floating Cards or Vector Elements -->
             <div class="visual-card main-visual-card">
-              <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80" alt="African Developers working together" style="width:100%; height:100%; object-fit:cover; border-radius: 24px;">
+              <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80" alt="African Developers working together">
               <div class="floating-badge badge-top-right">
                 <i class="fa-solid fa-briefcase"></i> 50+ New Jobs
               </div>
@@ -1037,9 +1042,9 @@ const App = {
       </section>
 
       <!-- Quick Filter Pills section -->
-      <section class="section" style="padding-top:0px; padding-bottom: 20px;">
-        <div class="container" style="display:flex; justify-content:center;">
-          <div class="home-filter-pills" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+      <section class="section home-filters-section">
+        <div class="container flex-center">
+          <div class="home-filter-pills">
             <button class="home-filter-pill active" data-category="All">All Feed</button>
             <button class="home-filter-pill" data-category="Jobs">Jobs</button>
             <button class="home-filter-pill" data-category="Internships">Internships</button>
@@ -1151,11 +1156,11 @@ const App = {
     const categoryOptions = ['All', ...new Set(opps.map(o => o.category))].map(c => `<option value="${c}">${c}</option>`).join('');
 
     return `
-      <section class="section" style="padding-top:60px;">
+      <section class="section">
         <div class="container">
-          <div class="section-header" style="margin-bottom: 40px;">
+          <div class="section-header">
             <div>
-              <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Filter & Discover</span>
+              <span class="subheading">Filter & Discover</span>
               <h2>Opportunities Directory</h2>
               <p>Explore active internships, remote junior developer roles, graduate trainee placements, and seed grants.</p>
             </div>
@@ -1215,7 +1220,7 @@ const App = {
               </div>
 
               <!-- Sort selector (added in next row visually due to grid wrap) -->
-              <div class="filter-group" style="grid-column: span 1; margin-top: 10px;">
+              <div class="filter-group">
                 <label for="opp-sort">Sort By</label>
                 <select id="opp-sort" class="admin-form-control">
                   <option value="latest">Latest Added</option>
@@ -1269,26 +1274,26 @@ const App = {
 
   templateAbout() {
     return `
-      <section class="section" style="padding-top: 60px;">
-        <div class="container" style="max-width: 900px;">
-          <div class="section-header" style="text-align:center; margin-bottom:50px;">
-            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Our Identity</span>
+      <section class="section">
+        <div class="container container-narrow">
+          <div class="section-header text-center">
+            <span class="subheading">Our Identity</span>
             <h2>About Afri Tech Hub</h2>
             <p>Bridging the resource gap for African tech talent and entrepreneurs.</p>
           </div>
-          <div class="about-content-card" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius:24px; padding:40px; box-shadow: var(--shadow-sm); line-height: 1.8;">
-            <p style="margin-bottom:20px;"><strong>Afri Tech Hub</strong> is an open-access platform built to catalog high-impact growth channels for African developers, engineers, and startup founders. We believe that access to careers, grants, fellowships, and quality education should be free and democratized.</p>
+          <div class="about-content-card">
+            <p><strong>Afri Tech Hub</strong> is an open-access platform built to catalog high-impact growth channels for African developers, engineers, and startup founders. We believe that access to careers, grants, fellowships, and quality education should be free and democratized.</p>
             
-            <p style="margin-bottom:20px;">Unlike traditional job boards, we do not require users to create accounts, fill profiles, or pass login gateways. Afri Tech Hub provides direct access. Every opportunity listed contains a direct button leading to the official application portal of the provider (e.g. Google, Mastercard Foundation, or international startup funds).</p>
+            <p>Unlike traditional job boards, we do not require users to create accounts, fill profiles, or pass login gateways. Afri Tech Hub provides direct access. Every opportunity listed contains a direct button leading to the official application portal of the provider (e.g. Google, Mastercard Foundation, or international startup funds).</p>
 
-            <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-shield-halved" style="color:var(--color-primary); margin-right:10px;"></i> Verified Sources Only</h3>
-            <p style="margin-bottom:20px;">Every post is curated and verified by our board team from reputable multinational companies, international development organizations, venture capital organizations, and top academic bodies.</p>
+            <h3><i class="fa-solid fa-shield-halved"></i> Verified Sources Only</h3>
+            <p>Every post is curated and verified by our board team from reputable multinational companies, international development organizations, venture capital organizations, and top academic bodies.</p>
 
-            <h3 style="margin-top:40px; margin-bottom:15px;"><i class="fa-solid fa-users" style="color:var(--color-primary); margin-right:10px;"></i> Community Outreach</h3>
-            <p style="margin-bottom:20px;">To support real-time alerts, we host an active WhatsApp community with over 5,000+ members. Members receive instant alerts on rolling grants, vacancies, and scholarship openings directly to their phones.</p>
+            <h3><i class="fa-solid fa-users"></i> Community Outreach</h3>
+            <p>To support real-time alerts, we host an active WhatsApp community with over 5,000+ members. Members receive instant alerts on rolling grants, vacancies, and scholarship openings directly to their phones.</p>
 
-            <div style="display:flex; justify-content:center; margin-top:40px;">
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="background:#25d366; border-color:#25d366;"><i class="fa-brands fa-whatsapp" style="margin-right:8px;"></i> Join our WhatsApp Community</a>
+            <div class="flex-center mt-4">
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Join our WhatsApp Community</a>
             </div>
           </div>
         </div>
@@ -1298,16 +1303,16 @@ const App = {
 
   templateFAQ() {
     return `
-      <section class="section" style="padding-top: 60px;">
-        <div class="container" style="max-width: 800px;">
-          <div class="section-header" style="text-align:center; margin-bottom:50px;">
-            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Help Center</span>
+      <section class="section">
+        <div class="container container-narrow">
+          <div class="section-header text-center">
+            <span class="subheading">Help Center</span>
             <h2>FAQs</h2>
             <p>Find answers to common questions about Afri Tech Hub.</p>
           </div>
 
-          <div style="margin-bottom:30px;">
-            <input type="text" id="faq-search" class="admin-form-control" placeholder="Search FAQ topics..." style="padding:14px 20px; border-radius:50px; background:var(--bg-card); box-shadow:var(--shadow-sm); border:1px solid var(--border-color);">
+          <div class="faq-search-wrapper">
+            <input type="text" id="faq-search" class="admin-form-control faq-search-input" placeholder="Search FAQ topics...">
           </div>
 
           <div class="faq-list" id="faq-results">
