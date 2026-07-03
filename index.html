@@ -41,126 +41,233 @@
   <body>
     <a href="#app-content" class="skip-link">Skip to content</a>
 
-    <!-- Unified Workspace Dashboard Wrapper -->
-    <div class="workspace-wrapper">
-      
-      <!-- Left Sidebar navigation menu -->
-      <aside class="workspace-sidebar" id="workspace-sidebar" aria-label="Sidebar Menu">
-        <div class="sidebar-brand-container">
-          <a href="#home" class="sidebar-brand">
-            <img
-              src="assets/images/logos/logo.jpg"
-              alt="Afri Tech Hub Logo"
-              class="brand-logo-img"
-              width="36"
-              height="36"
-            />
-            <div class="brand-text-container">
-              <span class="brand-name">AfriTech Hub</span>
-              <span class="brand-tagline">Opportunities Hub</span>
-            </div>
-          </a>
-          <!-- Close button on Mobile sidebar drawer -->
-          <button id="sidebar-close-btn" class="icon-btn sidebar-close-btn" aria-label="Close Sidebar"><i class="fa-solid fa-xmark"></i></button>
+    <!-- Topbar: quick links and community CTA -->
+    <div class="topbar">
+      <div class="container topbar-inner">
+        <div class="topbar-left">
+          Open access opportunities across Africa •
+          <a href="#opportunities">Browse</a>
         </div>
-        
-        <!-- Navigation Menu -->
-        <nav class="sidebar-nav" role="navigation" aria-label="Main Navigation">
-          <a href="#home" class="sidebar-link active" data-route="home">
-            <i class="fa-solid fa-chart-line"></i> <span>Dashboard</span>
-          </a>
-          <a href="#opportunities" class="sidebar-link" data-route="opportunities">
-            <i class="fa-solid fa-briefcase"></i> <span>Opportunities</span>
-          </a>
-          <a href="#categories" class="sidebar-link" data-route="categories">
-            <i class="fa-solid fa-tags"></i> <span>Categories</span>
-          </a>
-          <a href="#faq" class="sidebar-link" data-route="faq">
-            <i class="fa-solid fa-circle-question"></i> <span>FAQs</span>
-          </a>
-          <a href="#about" class="sidebar-link" data-route="about">
-            <i class="fa-solid fa-circle-info"></i> <span>About Us</span>
-          </a>
-          <a href="#contact" class="sidebar-link" data-route="contact">
-            <i class="fa-solid fa-envelope"></i> <span>Contact</span>
-          </a>
-        </nav>
-
-        <!-- Sidebar footer area -->
-        <div class="sidebar-footer">
-          <button
-            id="theme-toggle"
-            class="icon-btn sidebar-theme-btn"
-            title="Toggle Dark/Light Mode"
-            aria-label="Toggle Theme"
-          >
-            <i class="fa-solid fa-moon" id="theme-icon"></i>
-          </button>
+        <div class="topbar-right">
           <a
             href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH"
             target="_blank"
             rel="noopener noreferrer"
-            class="btn btn-sm btn-whatsapp sidebar-whatsapp-btn"
+            class="btn btn-sm btn-whatsapp"
+            >Join Community</a
           >
-            <i class="fa-brands fa-whatsapp"></i> <span>Join Hub</span>
-          </a>
         </div>
-      </aside>
-
-      <!-- Sidebar Backdrop drawer overlay on Mobile -->
-      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-
-      <!-- Main workspace canvas -->
-      <div class="workspace-main">
-        <!-- Sticky Workspace Header -->
-        <header class="workspace-header" role="banner">
-          <div class="header-inner">
-            <div class="header-left">
-              <button
-                id="menu-toggle"
-                class="menu-toggle icon-btn"
-                title="Toggle Navigation Menu"
-                aria-label="Toggle Navigation"
-                aria-controls="workspace-sidebar"
-                aria-expanded="false"
-              >
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-              </button>
-              <h1 id="view-title" class="view-title">Dashboard Overview</h1>
-            </div>
-            
-            <div class="header-right">
-              <span class="live-indicator"><span class="pulse-dot"></span> Live Directory</span>
-            </div>
-          </div>
-          <!-- Scroll Progress indicator -->
-          <div class="scroll-progress-container">
-            <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
-          </div>
-        </header>
-
-        <!-- SPA dynamic content panel -->
-        <main id="app-content" class="workspace-content" role="main" tabindex="-1">
-          <!-- Views will be injected here dynamically -->
-        </main>
-
-        <!-- Compact Workspace footer -->
-        <footer class="workspace-footer">
-          <div class="footer-inner">
-            <p class="copyright-text">&copy; 2026 AfriTech Hub. Open access directory.</p>
-            <div class="footer-links-row">
-              <a href="#privacy" class="footer-bottom-link">Privacy Policy</a>
-              <span class="divider">•</span>
-              <a href="#terms" class="footer-bottom-link">Terms of Use</a>
-              <span class="divider">•</span>
-              <a href="#admin-login" class="footer-bottom-link"><i class="fa-solid fa-lock"></i> Admin Portal</a>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
+
+    <!-- ==========================================
+       GLOBAL NAVBAR / HEADER
+       ========================================== -->
+    <header class="site-header" role="banner">
+      <div class="container header-main">
+        <!-- Logo / Brand -->
+        <a href="#home" class="brand" id="nav-brand">
+          <img
+            src="assets/images/logos/logo.jpg"
+            alt="Afri Tech Hub Logo"
+            class="brand-logo-img"
+            loading="lazy"
+            width="36"
+            height="36"
+          />
+          <div class="brand-text-container">
+            <span class="brand-name">Afri Tech Hub</span>
+            <span class="brand-tagline">Empowering African Innovators</span>
+          </div>
+        </a>
+
+        <!-- Navigation Links -->
+        <nav
+          class="nav-menu"
+          id="nav-menu"
+          role="navigation"
+          aria-label="Main Navigation"
+          aria-hidden="false"
+        >
+          <a href="#home" class="nav-link active" data-route="home">Home</a>
+          <a href="#opportunities" class="nav-link" data-route="opportunities"
+            >Opportunities</a
+          >
+          <a href="#categories" class="nav-link" data-route="categories"
+            >Categories</a
+          >
+          <a href="#faq" class="nav-link" data-route="faq">FAQs</a>
+          <a href="#about" class="nav-link" data-route="about">About</a>
+          <a href="#contact" class="nav-link" data-route="contact">Contact</a>
+        </nav>
+
+        <!-- Action buttons: Theme Toggle & Hamburger -->
+        <div class="nav-actions">
+          <button
+            id="theme-toggle"
+            class="icon-btn"
+            title="Toggle Theme"
+            aria-label="Toggle Theme"
+          >
+            <i class="fa-solid fa-moon" id="theme-icon"></i>
+          </button>
+          <button
+            id="menu-toggle"
+            class="menu-toggle icon-btn"
+            title="Toggle Navigation Menu"
+            aria-label="Toggle Navigation"
+            aria-controls="nav-menu"
+            aria-expanded="false"
+          >
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
+        </div>
+      </div>
+      <!-- Scroll Progress Indicator Bar -->
+      <div class="scroll-progress-container">
+        <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
+      </div>
+    </header>
+
+    <!-- ==========================================
+       MAIN DYNAMIC CONTAINER (SPA VIEWS)
+       ========================================== -->
+    <main id="app-content" class="animate-fade-in container-center" role="main" tabindex="-1">
+      <!-- Views will be injected here dynamically by app.js -->
+    </main>
+
+    <!-- ==========================================
+       GLOBAL FOOTER
+       ========================================== -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <!-- Brand / About Column -->
+          <div class="footer-col">
+            <div class="brand footer-brand">
+              <img
+                src="assets/images/logos/logo.jpg"
+                alt="Afri Tech Hub Logo"
+                class="brand-logo-img"
+                loading="lazy"
+                width="30"
+                height="30"
+              />
+              <div class="brand-text-container">
+                <span class="brand-name">Afri Tech Hub</span>
+              </div>
+            </div>
+            <p class="footer-desc">
+              Empowering African innovators, graduates, and entrepreneurs by
+              providing direct, open access to verified career, academic, and financial opportunities.
+            </p>
+            <div class="social-links">
+              <a
+                href="https://twitter.com/afritechhub"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="social-link"
+                aria-label="Twitter"
+                ><i class="fa-brands fa-x-twitter"></i
+              ></a>
+              <a
+                href="https://linkedin.com/company/afritechhub"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="social-link"
+                aria-label="LinkedIn"
+                ><i class="fa-brands fa-linkedin-in"></i
+              ></a>
+              <a
+                href="https://instagram.com/afritechhub"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="social-link"
+                aria-label="Instagram"
+                ><i class="fa-brands fa-instagram"></i
+              ></a>
+            </div>
+          </div>
+
+          <!-- Opportunities Quick Links -->
+          <div class="footer-col">
+            <h3 class="footer-heading">Opportunities</h3>
+            <ul class="footer-links">
+              <li>
+                <a href="#opportunities?category=jobs" class="footer-link"
+                  >Jobs & Vacancies</a
+                >
+              </li>
+              <li>
+                <a href="#opportunities?category=grants" class="footer-link"
+                  >Grants & Fellowships</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#opportunities?category=scholarships"
+                  class="footer-link"
+                  >Scholarships</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#opportunities?category=internships"
+                  class="footer-link"
+                  >Internships</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <!-- Navigation Quick Links -->
+          <div class="footer-col">
+            <h3 class="footer-heading">Platform</h3>
+            <ul class="footer-links">
+              <li><a href="#home" class="footer-link">Home</a></li>
+              <li><a href="#about" class="footer-link">About Us</a></li>
+              <li>
+                <a href="#faq" class="footer-link"
+                  >FAQs</a
+                >
+              </li>
+              <li>
+                <a href="#admin-login" class="footer-link"
+                  ><i class="fa-solid fa-lock footer-lock-icon"></i>Admin
+                  Panel</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <!-- Contact Column -->
+          <div class="footer-col">
+            <h3 class="footer-heading">Get in Touch</h3>
+            <div class="footer-contact-item">
+              <i class="fa-solid fa-envelope"></i>
+              <span>info@afritechhub.org</span>
+            </div>
+            <div class="footer-contact-item">
+              <i class="fa-solid fa-phone"></i>
+              <span>+234 915 970 1354</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Bottom Links & Copyright -->
+        <div class="footer-bottom">
+          <p>
+            &copy; 2026 Afri Tech Hub. All rights reserved. Open access directory.
+          </p>
+          <div class="footer-bottom-links">
+            <a href="#privacy" class="footer-bottom-link">Privacy Policy</a>
+            <a href="#terms" class="footer-bottom-link">Terms of Use</a>
+          </div>
+        </div>
+      </div>
+    </footer>
 
     <!-- Floating actions (collapsible WhatsApp community trigger only) -->
     <div class="floating-actions-container">

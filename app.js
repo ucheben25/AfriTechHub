@@ -22,19 +22,16 @@ const App = {
   // DOM Cache for static container items
   nodes: {
     content: document.getElementById("app-content"),
-    navLinks: document.querySelectorAll(".sidebar-link"),
+    navLinks: document.querySelectorAll(".nav-link"),
     navBrand: document.getElementById("nav-brand"),
     themeToggle: document.getElementById("theme-toggle"),
     themeIcon: document.getElementById("theme-icon"),
     menuToggle: document.getElementById("menu-toggle"),
-    navMenu: document.getElementById("workspace-sidebar"),
+    navMenu: document.getElementById("nav-menu"),
     scrollTopBtn: document.getElementById("scroll-top-btn"),
     toast: document.getElementById("toast-alert"),
     toastMsg: document.getElementById("toast-message"),
     progressBar: document.getElementById("scroll-progress-bar"),
-    sidebar: document.getElementById("workspace-sidebar"),
-    sidebarBackdrop: document.getElementById("sidebar-backdrop"),
-    sidebarCloseBtn: document.getElementById("sidebar-close-btn")
   },
 
   init() {
@@ -63,55 +60,39 @@ const App = {
     // Theme toggle button
     this.nodes.themeToggle.addEventListener("click", () => this.toggleTheme());
 
-    // Mobile nav toggle (opens sidebar drawer)
+    // Mobile nav toggle
     this.nodes.menuToggle.addEventListener("click", () => {
-      const isActive = this.nodes.sidebar.classList.toggle("active");
-      this.nodes.sidebarBackdrop.classList.toggle("active");
+      const isActive = this.nodes.navMenu.classList.toggle("active");
       this.nodes.menuToggle.classList.toggle("active");
+      // Accessibility: reflect expanded state
       this.nodes.menuToggle.setAttribute(
         "aria-expanded",
-        isActive ? "true" : "false"
+        isActive ? "true" : "false",
+      );
+      this.nodes.navMenu.setAttribute(
+        "aria-hidden",
+        isActive ? "false" : "true",
       );
     });
 
-    // Close mobile nav close button click
-    if (this.nodes.sidebarCloseBtn) {
-      this.nodes.sidebarCloseBtn.addEventListener("click", () => {
-        this.nodes.sidebar.classList.remove("active");
-        this.nodes.sidebarBackdrop.classList.remove("active");
+    // Close mobile nav when clicking a link
+    this.nodes.navMenu.addEventListener("click", (e) => {
+      if (e.target.classList.contains("nav-link")) {
+        this.nodes.navMenu.classList.remove("active");
         this.nodes.menuToggle.classList.remove("active");
         this.nodes.menuToggle.setAttribute("aria-expanded", "false");
-      });
-    }
-
-    // Close mobile nav backdrop click
-    if (this.nodes.sidebarBackdrop) {
-      this.nodes.sidebarBackdrop.addEventListener("click", () => {
-        this.nodes.sidebar.classList.remove("active");
-        this.nodes.sidebarBackdrop.classList.remove("active");
-        this.nodes.menuToggle.classList.remove("active");
-        this.nodes.menuToggle.setAttribute("aria-expanded", "false");
-      });
-    }
-
-    // Close mobile nav when clicking a sidebar link
-    this.nodes.sidebar.addEventListener("click", (e) => {
-      if (e.target.closest(".sidebar-link")) {
-        this.nodes.sidebar.classList.remove("active");
-        this.nodes.sidebarBackdrop.classList.remove("active");
-        this.nodes.menuToggle.classList.remove("active");
-        this.nodes.menuToggle.setAttribute("aria-expanded", "false");
+        this.nodes.navMenu.setAttribute("aria-hidden", "true");
       }
     });
 
     // Close mobile nav with Escape key
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        if (this.nodes.sidebar.classList.contains("active")) {
-          this.nodes.sidebar.classList.remove("active");
-          this.nodes.sidebarBackdrop.classList.remove("active");
+        if (this.nodes.navMenu.classList.contains("active")) {
+          this.nodes.navMenu.classList.remove("active");
           this.nodes.menuToggle.classList.remove("active");
           this.nodes.menuToggle.setAttribute("aria-expanded", "false");
+          this.nodes.navMenu.setAttribute("aria-hidden", "true");
         }
       }
     });
@@ -207,11 +188,10 @@ const App = {
     // Dynamic ID routing check (e.g. #post/tef-entrepreneurship-2026)
     if (route.startsWith("#post/")) {
       const postId = route.substring(6); // Extract ID
-      this.state.currentPage = "opportunities";
-      this.state.activePostId = postId;
+      this.state.currentPage = "post-detail";
       this.updateNavbarActiveState("opportunities");
-      this.syncSEO("opportunities", { postId });
-      this.renderView("opportunities", { postId });
+      this.syncSEO("post-detail", { postId });
+      this.renderView("post-detail", { postId });
       return;
     }
 
@@ -360,23 +340,20 @@ const App = {
           htmlContent = this.templateHome();
       }
 
-      // Update workspace header title
-      const titleEl = document.getElementById("view-title");
-      if (titleEl) {
-        const titleMap = {
-          "home": "Dashboard Overview",
-          "opportunities": "Opportunities Directory",
-          "categories": "Opportunity Categories",
-          "about": "About AfriTech Hub",
-          "faq": "Frequently Asked Questions",
-          "contact": "Contact Support",
-          "privacy": "Privacy Policy",
-          "terms": "Terms of Use",
-          "admin-login": "Admin Authentication",
-          "admin-dashboard": "Admin Control Panel"
-        };
-        titleEl.textContent = titleMap[view] || "AfriTech Hub";
-      }
+      // Update browser document title
+      const titleMap = {
+        "home": "Dashboard Overview",
+        "opportunities": "Opportunities Directory",
+        "categories": "Opportunity Categories",
+        "about": "About AfriTech Hub",
+        "faq": "Frequently Asked Questions",
+        "contact": "Contact Support",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Use",
+        "admin-login": "Admin Authentication",
+        "admin-dashboard": "Admin Control Panel"
+      };
+      document.title = titleMap[view] ? `${titleMap[view]} | AfriTech Hub` : "AfriTech Hub";
 
       this.nodes.content.innerHTML = htmlContent;
       this.bindViewEvents(view, params);
@@ -518,17 +495,11 @@ const App = {
       const countrySelect = document.getElementById("opp-country-filter");
       const remoteSelect = document.getElementById("opp-remote-filter");
       const sortSelect = document.getElementById("opp-sort");
-      const listPane = document.getElementById("split-pane-list");
-      const detailsPane = document.getElementById("split-pane-details");
+      const oppGrid = document.getElementById("opp-grid");
 
       // Sync route query parameters if coming from dashboard categories click
       if (params.category) {
         categorySelect.value = params.category;
-      }
-      
-      // If we deep linked into a post (e.g. #post/tef-entrepreneurship-2026), highlight that
-      if (params.postId) {
-        this.state.activePostId = params.postId;
       }
 
       const updateList = () => {
@@ -582,62 +553,17 @@ const App = {
         }
 
         if (filtered.length === 0) {
-          listPane.innerHTML = `
-            <div class="no-results">
-              <i class="fa-solid fa-magnifying-glass"></i>
+          oppGrid.innerHTML = `
+            <div class="no-results" style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
+              <i class="fa-solid fa-magnifying-glass" style="font-size: 40px; color: var(--text-muted); margin-bottom: 15px;"></i>
               <h3>No match found</h3>
               <p>Try modifying your keyword search.</p>
             </div>
           `;
-          this.state.activePostId = null;
-          this.renderSplitDetails(null);
         } else {
-          // If activePostId is not set, or is not in the current filtered subset, select first
-          const activeInFiltered = filtered.find(o => o.id === this.state.activePostId);
-          if (!activeInFiltered) {
-            this.state.activePostId = filtered[0].id;
-          }
-
-          listPane.innerHTML = filtered
-            .map((opp) => this.compactCardTemplate(opp, opp.id === this.state.activePostId))
+          oppGrid.innerHTML = filtered
+            .map((opp) => this.cardTemplate(opp))
             .join("");
-
-          // Render details for active item
-          this.renderSplitDetails(this.state.activePostId);
-
-          // Add click listeners to compact cards
-          const compactCards = listPane.querySelectorAll(".compact-opp-card");
-          compactCards.forEach((card) => {
-            card.addEventListener("click", () => {
-              const oppId = card.getAttribute("data-id");
-              this.state.activePostId = oppId;
-              
-              // Remove active classes and set active on clicked card
-              compactCards.forEach(c => c.classList.remove("active"));
-              card.classList.add("active");
-
-              // Render details pane
-              this.renderSplitDetails(oppId);
-
-              // Mobile split-pane slide-in toggle
-              if (window.innerWidth < 768) {
-                detailsPane.classList.add("active");
-              }
-            });
-            
-            // Support keyboard accessibility
-            card.addEventListener("keydown", (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                card.click();
-              }
-            });
-          });
-
-          // Check if viewport is mobile and we deep-linked a post, slide it in automatically
-          if (params.postId && window.innerWidth < 768) {
-            detailsPane.classList.add("active");
-          }
         }
       };
 
@@ -1337,114 +1263,105 @@ const App = {
   },
 
   templateHome() {
-    const opps = this.state.opportunities.filter(o => o.status === 'published' || !o.status);
-    
-    // Count stats
-    const jobsCount = opps.filter(o => o.category.toLowerCase() === 'jobs').length;
-    const grantsCount = opps.filter(o => o.category.toLowerCase() === 'grants' || o.category.toLowerCase() === 'business-funding').length;
-    const scholarshipsCount = opps.filter(o => o.category.toLowerCase() === 'scholarships').length;
-    const internshipsCount = opps.filter(o => o.category.toLowerCase() === 'internships').length;
+    const featuredOpps = this.state.opportunities
+      .filter((opp) => opp.featured && (opp.status === 'published' || !opp.status))
+      .slice(0, 4);
+    const latestOpps = this.state.opportunities
+      .filter((opp) => opp.status === 'published' || !opp.status)
+      .slice(0, 6);
 
-    // Featured Listings
-    const featured = opps.filter(o => o.featured).slice(0, 4);
+    const categoriesGrid = this.state.categories
+      .slice(0, 8)
+      .map(
+        (cat) => `
+          <a href="#opportunities?category=${encodeURIComponent(cat.name)}" class="category-card animate-fade-in-up">
+            <div class="category-icon"><i class="fa-solid fa-${cat.icon}"></i></div>
+            <div class="category-body">
+              <h4 class="category-title">${cat.name}</h4>
+              <span class="category-count">${cat.count} Listings</span>
+            </div>
+          </a>
+        `,
+      )
+      .join('');
 
     return `
-      <div class="dashboard-overview-container">
-        <!-- Welcoming banner -->
-        <div class="dashboard-banner">
-          <div class="banner-content">
-            <h1>Welcome to AfriTech Workspace</h1>
-            <p>Access curated scholarships, grants, internships, and remote developer jobs designed specifically for African youth and tech talent. Open, verified, and 100% free.</p>
-          </div>
-          <div class="banner-badge">
-            <span class="live-dot-glow"></span>
-            <span>Verified Listings Only</span>
+      <section class="home-hero full-bleed">
+        <div class="hero-overlay"></div>
+        <div class="container hero-inner">
+          <div class="hero-center text-center">
+            <span class="hero-tagline animate-fade-in"><span class="pulse-dot"></span> Live Curated Resource Feed</span>
+            <h1 class="hero-title animate-fade-in">Discover Your Next Growth Opportunity</h1>
+            <p class="hero-lead animate-fade-in-up">Verified jobs, grants, internships, and scholarships for African innovators. No login required, 100% free open access.</p>
+
+            <div class="hero-search-wrapper animate-fade-in-up">
+              <div class="hero-search">
+                <div class="filter-search-wrapper">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input id="home-search" type="text" class="admin-form-control" placeholder="Search title, organization, keywords...">
+                </div>
+                <button id="home-search-btn" class="btn btn-primary">Search Feed</button>
+              </div>
+              <div class="home-filter-pills">
+                <button class="home-filter-pill active" data-category="All">All Feed</button>
+                <button class="home-filter-pill" data-category="Jobs">Jobs</button>
+                <button class="home-filter-pill" data-category="Grants">Grants</button>
+                <button class="home-filter-pill" data-category="Scholarships">Scholarships</button>
+                <button class="home-filter-pill" data-category="Internships">Internships</button>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Metrics Grid -->
-        <div class="metrics-grid">
-          <a href="#opportunities?category=Jobs" class="metric-card">
-            <div class="metric-icon jobs"><i class="fa-solid fa-briefcase"></i></div>
-            <div class="metric-info">
-              <h3>${jobsCount}</h3>
-              <p>Jobs & Careers</p>
+      <section class="section">
+        <div class="container container-feed">
+          <div class="section-header">
+            <div>
+              <span class="subheading">Active Listings</span>
+              <h2>Recent Opportunities</h2>
             </div>
-            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
-          </a>
-          <a href="#opportunities?category=Grants" class="metric-card">
-            <div class="metric-icon grants"><i class="fa-solid fa-hand-holding-dollar"></i></div>
-            <div class="metric-info">
-              <h3>${grantsCount}</h3>
-              <p>Startup Grants</p>
-            </div>
-            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
-          </a>
-          <a href="#opportunities?category=Scholarships" class="metric-card">
-            <div class="metric-icon scholarships"><i class="fa-solid fa-graduation-cap"></i></div>
-            <div class="metric-info">
-              <h3>${scholarshipsCount}</h3>
-              <p>Scholarships</p>
-            </div>
-            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
-          </a>
-          <a href="#opportunities?category=Internships" class="metric-card">
-            <div class="metric-icon internships"><i class="fa-solid fa-user-gear"></i></div>
-            <div class="metric-info">
-              <h3>${internshipsCount}</h3>
-              <p>Tech Internships</p>
-            </div>
-            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
-          </a>
-        </div>
-
-        <!-- Featured & Community Row -->
-        <div class="dashboard-split-row">
-          <!-- Featured opportunities card listing -->
-          <div class="dashboard-panel panel-featured">
-            <div class="panel-header">
-              <h3><i class="fa-solid fa-star color-accent"></i> Featured Listings</h3>
-              <a href="#opportunities" class="panel-action-link">Browse All</a>
-            </div>
-            <div class="featured-list-stack">
-              ${featured.length === 0 ? '<p class="muted">No featured opportunities listed today.</p>' : 
-                featured.map(o => `
-                  <div class="featured-item-row" data-id="${o.id}">
-                    <img src="${o.image}" alt="${o.company} logo" loading="lazy">
-                    <div class="featured-item-info">
-                      <h4>${o.title}</h4>
-                      <p>${o.company} • <span class="category-badge cat-${o.category.toLowerCase().replace(/[^a-z0-9]/g,'')}">${o.category}</span></p>
-                    </div>
-                    <a href="#post/${o.id}" class="btn btn-sm btn-outline">Details</a>
-                  </div>
-                `).join('')
-              }
-            </div>
+            <a href="#opportunities" class="btn btn-outline btn-sm">See Full Directory <i class="fa-solid fa-arrow-right"></i></a>
           </div>
 
-          <!-- Community Card & Newsletter signup -->
-          <div class="dashboard-panel panel-community">
-            <div class="panel-header">
-              <h3><i class="fa-solid fa-users color-primary"></i> Hub Community</h3>
+          <div class="opportunities-grid single-column-feed" id="home-opportunities-grid">
+            ${latestOpps.map((opp) => this.cardTemplate(opp)).join('')}
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-alt">
+        <div class="container">
+          <div class="section-header text-center">
+            <span class="subheading">Categories</span>
+            <h2>Explore by Interest</h2>
+            <p>Browse directories sorted by resource classification.</p>
+          </div>
+          <div class="categories-grid">
+            ${categoriesGrid}
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container container-narrow">
+          <div class="newsletter-card animate-fade-in-up">
+            <div class="newsletter-content">
+              <h3>Join our WhatsApp Alerts</h3>
+              <p>Receive rolling grants, developer jobs, and academic scholarships straight to your phone. 5,000+ members already subscribed.</p>
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp mt-2"><i class="fa-brands fa-whatsapp"></i> Join WhatsApp Group</a>
             </div>
-            <div class="community-card-body">
-              <p>Join over 5,000+ members in our active WhatsApp community to get real-time opportunity alerts directly on your phone.</p>
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp w-100 mt-2 mb-3">
-                <i class="fa-brands fa-whatsapp"></i> Join WhatsApp Group
-              </a>
-              
-              <hr class="panel-divider">
-              
-              <h4>Subscribe to Weekly Roundup</h4>
-              <p class="muted">Get weekly curated internships and grants straight to your email inbox.</p>
-              <form id="home-newsletter-form" class="dashboard-newsletter-form">
-                <input type="email" class="admin-form-control" placeholder="yourname@gmail.com" required>
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+            <div class="newsletter-form-container">
+              <h4>Get Weekly Email Roundups</h4>
+              <p class="muted">A weekly summary of high-impact opportunities.</p>
+              <form id="home-newsletter-form" class="newsletter-form">
+                <input type="email" class="admin-form-control" placeholder="Enter your email address" required aria-label="Email address">
+                <button type="submit" class="btn btn-primary">Subscribe</button>
               </form>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     `;
   },
 
@@ -1457,54 +1374,58 @@ const App = {
 
     // Categories filter options
     const categoryOptions = ['All', ...new Set(opps.map(o => o.category))].map(c => `<option value="${c}">${c}</option>`).join('');
-
     return `
-      <div class="workspace-split-container">
-        <!-- Top Workspace Filter Bar -->
-        <div class="workspace-filter-bar">
-          <div class="filter-search-wrapper">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, skills, orgs...">
+      <section class="section">
+        <div class="container container-feed">
+          <div class="section-header text-center">
+            <span class="subheading">Filter Feed</span>
+            <h2>Opportunities Directory</h2>
+            <p>Explore active internships, startup grants, fully-funded scholarships, and developer jobs.</p>
           </div>
 
-          <div class="filter-dropdown-group">
-            <select id="opp-cat-filter" class="admin-form-control">
-              <option value="All">All Categories</option>
-              ${categoryOptions}
-            </select>
+          <!-- Centered Filter Bar -->
+          <div class="directory-filter-card animate-fade-in-up">
+            <div class="filter-search-wrapper">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, skills, organization...">
+            </div>
+            
+            <div class="filter-controls-row">
+              <select id="opp-cat-filter" class="admin-form-control">
+                <option value="All">All Categories</option>
+                ${categoryOptions}
+              </select>
 
-            <select id="opp-country-filter" class="admin-form-control">
-              <option value="All">All Countries</option>
-              ${countryOptions}
-            </select>
+              <select id="opp-country-filter" class="admin-form-control">
+                <option value="All">All Countries</option>
+                ${countryOptions}
+              </select>
 
-            <select id="opp-remote-filter" class="admin-form-control">
-              <option value="All">All Workplace</option>
-              <option value="Remote">Remote</option>
-              <option value="Hybrid">Hybrid</option>
-              <option value="Onsite">Onsite</option>
-            </select>
+              <select id="opp-remote-filter" class="admin-form-control">
+                <option value="All">All Workplace</option>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="Onsite">Onsite</option>
+              </select>
 
-            <select id="opp-sort" class="admin-form-control">
-              <option value="latest">Latest Added</option>
-              <option value="deadline">Approaching Deadline</option>
-            </select>
+              <select id="opp-sort" class="admin-form-control">
+                <option value="latest">Latest Added</option>
+                <option value="deadline">Deadline Approaching</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Centered Single Column Feed Grid -->
+          <div class="opportunities-grid single-column-feed" id="opp-grid">
+            <!-- Filled dynamically by updateList -->
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex-center mt-4">
+            <button class="btn btn-outline" id="load-more-btn" style="display: none;"><i class="fa-solid fa-spinner animate-spin"></i> Load More Opportunities</button>
           </div>
         </div>
-
-        <!-- Split Pane Layout -->
-        <div class="workspace-split-pane">
-          <!-- Left scrollable list -->
-          <div class="split-pane-list" id="split-pane-list">
-            <!-- Compact cards are rendered dynamically -->
-          </div>
-
-          <!-- Right sticky details review panel -->
-          <div class="split-pane-details" id="split-pane-details">
-            <!-- Full details are rendered dynamically -->
-          </div>
-        </div>
-      </div>
+      </section>
     `;
   },
 
