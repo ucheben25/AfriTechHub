@@ -392,13 +392,14 @@ const App = {
   bindViewEvents(view, params) {
     if (view === "home") {
       const searchInput = document.getElementById("home-search");
-      const pills = document.querySelectorAll(".home-filter-pill");
+      const pills = document.querySelectorAll(".directory-tab");
+      const quickTags = document.querySelectorAll(".quick-tag-pill");
       const cardsGrid = document.getElementById("home-opportunities-grid");
       const searchBtn = document.getElementById("home-search-btn");
 
       const filterHomeListings = () => {
         const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
-        const activePill = document.querySelector(".home-filter-pill.active");
+        const activePill = document.querySelector(".directory-tab.active");
         const cat = activePill
           ? activePill.getAttribute("data-category")
           : "All";
@@ -442,6 +443,18 @@ const App = {
             pills.forEach((p) => p.classList.remove("active"));
             pill.classList.add("active");
             filterHomeListings();
+          });
+        });
+      }
+
+      if (quickTags && quickTags.length) {
+        quickTags.forEach((pill) => {
+          pill.addEventListener("click", () => {
+            const tagVal = pill.getAttribute("data-tag");
+            if (searchInput) {
+              searchInput.value = tagVal;
+              filterHomeListings();
+            }
           });
         });
       }
@@ -491,23 +504,47 @@ const App = {
 
     if (view === "opportunities") {
       const searchInput = document.getElementById("opp-search");
-      const categorySelect = document.getElementById("opp-cat-filter");
       const countrySelect = document.getElementById("opp-country-filter");
       const remoteSelect = document.getElementById("opp-remote-filter");
+      const levelSelect = document.getElementById("opp-level-filter");
       const sortSelect = document.getElementById("opp-sort");
       const oppGrid = document.getElementById("opp-grid");
 
+      const filterToggle = document.getElementById("adv-filter-toggle");
+      const filterDrawer = document.getElementById("adv-filter-drawer");
+      const tabs = document.querySelectorAll("#directory-nav-tabs .directory-tab");
+
+      // Slide toggle advanced filters drawer
+      if (filterToggle && filterDrawer) {
+        filterToggle.addEventListener("click", () => {
+          const isExpanded = filterToggle.getAttribute("aria-expanded") === "true";
+          filterToggle.setAttribute("aria-expanded", !isExpanded);
+          filterToggle.classList.toggle("active");
+          filterDrawer.style.maxHeight = isExpanded ? "0px" : `${filterDrawer.scrollHeight + 30}px`;
+        });
+      }
+
       // Sync route query parameters if coming from dashboard categories click
-      if (params.category) {
-        categorySelect.value = params.category;
+      let activeCat = "All";
+      if (params.category && tabs.length) {
+        activeCat = params.category;
+        tabs.forEach((tab) => {
+          if (tab.getAttribute("data-category").toLowerCase() === activeCat.toLowerCase()) {
+            tab.classList.add("active");
+          } else {
+            tab.classList.remove("active");
+          }
+        });
       }
 
       const updateList = () => {
-        const query = searchInput.value.trim().toLowerCase();
-        const cat = categorySelect.value;
-        const country = countrySelect.value;
-        const remote = remoteSelect.value;
-        const sort = sortSelect.value;
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        const activeTab = document.querySelector("#directory-nav-tabs .directory-tab.active");
+        const cat = activeTab ? activeTab.getAttribute("data-category") : "All";
+        const country = countrySelect ? countrySelect.value : "All";
+        const remote = remoteSelect ? remoteSelect.value : "All";
+        const level = levelSelect ? levelSelect.value : "All";
+        const sort = sortSelect ? sortSelect.value : "latest";
 
         let filtered = DataStore.getOpportunities();
 
@@ -527,6 +564,13 @@ const App = {
           filtered = filtered.filter(
             (opp) =>
               opp.remote && opp.remote.toLowerCase() === remote.toLowerCase(),
+          );
+        }
+        if (level !== "All") {
+          filtered = filtered.filter(
+            (opp) =>
+              opp.experienceLevel &&
+              opp.experienceLevel.toLowerCase() === level.toLowerCase(),
           );
         }
         if (query) {
@@ -567,11 +611,21 @@ const App = {
         }
       };
 
-      searchInput.addEventListener("input", updateList);
-      categorySelect.addEventListener("change", updateList);
-      countrySelect.addEventListener("change", updateList);
-      remoteSelect.addEventListener("change", updateList);
-      sortSelect.addEventListener("change", updateList);
+      if (tabs && tabs.length) {
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", () => {
+            tabs.forEach((t) => t.classList.remove("active"));
+            tab.classList.add("active");
+            updateList();
+          });
+        });
+      }
+
+      if (searchInput) searchInput.addEventListener("input", updateList);
+      if (countrySelect) countrySelect.addEventListener("change", updateList);
+      if (remoteSelect) remoteSelect.addEventListener("change", updateList);
+      if (levelSelect) levelSelect.addEventListener("change", updateList);
+      if (sortSelect) sortSelect.addEventListener("change", updateList);
 
       updateList(); // Run filters initially
     }
@@ -1263,12 +1317,15 @@ const App = {
   },
 
   templateHome() {
-    const featuredOpps = this.state.opportunities
-      .filter((opp) => opp.featured && (opp.status === 'published' || !opp.status))
-      .slice(0, 4);
-    const latestOpps = this.state.opportunities
-      .filter((opp) => opp.status === 'published' || !opp.status)
-      .slice(0, 6);
+    const opps = this.state.opportunities.filter((opp) => opp.status === 'published' || !opp.status);
+    const featuredOpps = opps.filter((opp) => opp.featured).slice(0, 4);
+    const latestOpps = opps.slice(0, 6);
+
+    // Dynamic Stats
+    const jobsCount = opps.filter((o) => o.category.toLowerCase() === 'jobs').length;
+    const grantsCount = opps.filter((o) => o.category.toLowerCase() === 'grants' || o.category.toLowerCase() === 'business-funding').length;
+    const scholarshipsCount = opps.filter((o) => o.category.toLowerCase() === 'scholarships').length;
+    const internshipsCount = opps.filter((o) => o.category.toLowerCase() === 'internships').length;
 
     const categoriesGrid = this.state.categories
       .slice(0, 8)
@@ -1286,50 +1343,135 @@ const App = {
       .join('');
 
     return `
+      <!-- Split Hero Screen -->
       <section class="home-hero full-bleed">
-        <div class="hero-overlay"></div>
-        <div class="container hero-inner">
-          <div class="hero-center text-center">
-            <span class="hero-tagline animate-fade-in"><span class="pulse-dot"></span> Live Curated Resource Feed</span>
-            <h1 class="hero-title animate-fade-in">Discover Your Next Growth Opportunity</h1>
-            <p class="hero-lead animate-fade-in-up">Verified jobs, grants, internships, and scholarships for African innovators. No login required, 100% free open access.</p>
+        <div class="hero-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+        </div>
+        <div class="container hero-inner-split">
+          <div class="hero-left animate-fade-in">
+            <span class="hero-tagline"><span class="pulse-dot"></span> Live Opportunity Desk</span>
+            <h1 class="hero-title">Connecting African Talent to Global Resources</h1>
+            <p class="hero-lead">We verify and curate high-impact startup grants, remote tech vacancies, graduate internships, and fully-funded scholarships. No profiles, no accounts, 100% free open access.</p>
 
-            <div class="hero-search-wrapper animate-fade-in-up">
-              <div class="hero-search">
-                <div class="filter-search-wrapper">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <input id="home-search" type="text" class="admin-form-control" placeholder="Search title, organization, keywords...">
-                </div>
+            <div class="hero-search-console">
+              <div class="hero-search-input-group">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input id="home-search" type="text" class="admin-form-control" placeholder="Search title, skills, organization...">
                 <button id="home-search-btn" class="btn btn-primary">Search Feed</button>
               </div>
-              <div class="home-filter-pills">
-                <button class="home-filter-pill active" data-category="All">All Feed</button>
-                <button class="home-filter-pill" data-category="Jobs">Jobs</button>
-                <button class="home-filter-pill" data-category="Grants">Grants</button>
-                <button class="home-filter-pill" data-category="Scholarships">Scholarships</button>
-                <button class="home-filter-pill" data-category="Internships">Internships</button>
+              <div class="hero-quick-tags">
+                <span class="quick-tag-label">Popular tags:</span>
+                <button class="quick-tag-pill" data-tag="Remote">Remote</button>
+                <button class="quick-tag-pill" data-tag="Google">Google</button>
+                <button class="quick-tag-pill" data-tag="Fully Funded">Fully Funded</button>
+                <button class="quick-tag-pill" data-tag="Fellowship">Fellowship</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-right animate-fade-in-up">
+            <!-- Glassmorphic Showcase card -->
+            <div class="showcase-card">
+              <div class="showcase-card-header">
+                <div class="company-badge-strip">
+                  <span class="showcase-logo"><i class="fa-solid fa-bolt"></i></span>
+                  <div>
+                    <h4>SpaceX Fellowship</h4>
+                    <p>Space Exploration Technologies</p>
+                  </div>
+                </div>
+                <span class="badge-status published">Fully Funded</span>
+              </div>
+              <div class="showcase-card-body">
+                <div class="showcase-meta-row">
+                  <span><i class="fa-solid fa-location-dot"></i> Cape Canaveral, FL</span>
+                  <span><i class="fa-solid fa-earth-africa"></i> Global Candidates</span>
+                </div>
+                <p>Curated fellowship program for African aerospace engineers, software developers, and research associates to work on Starlink core modules.</p>
+                <div class="showcase-skills-strip">
+                  <span class="card-skill-badge">C++</span>
+                  <span class="card-skill-badge">Linux Systems</span>
+                  <span class="card-skill-badge">Aerospace</span>
+                </div>
+              </div>
+              <div class="showcase-card-footer">
+                <span class="showcase-deadline"><i class="fa-solid fa-hourglass-half"></i> Deadline: Sept 30, 2026</span>
+                <a href="#opportunities" class="btn btn-outline btn-sm">Preview Board</a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      <!-- Advanced Count Metrics Grid -->
+      <section class="section section-stats">
+        <div class="container">
+          <div class="advanced-stats-grid">
+            <a href="#opportunities?category=Jobs" class="stat-counter-card">
+              <div class="stat-icon-wrapper jobs"><i class="fa-solid fa-briefcase"></i></div>
+              <div class="stat-details">
+                <h3>${jobsCount}</h3>
+                <p>Remote Jobs</p>
+              </div>
+            </a>
+            <a href="#opportunities?category=Grants" class="stat-counter-card">
+              <div class="stat-icon-wrapper grants"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+              <div class="stat-details">
+                <h3>${grantsCount}</h3>
+                <p>Startup Grants</p>
+              </div>
+            </a>
+            <a href="#opportunities?category=Scholarships" class="stat-counter-card">
+              <div class="stat-icon-wrapper scholarships"><i class="fa-solid fa-graduation-cap"></i></div>
+              <div class="stat-details">
+                <h3>${scholarshipsCount}</h3>
+                <p>Scholarships</p>
+              </div>
+            </a>
+            <a href="#opportunities?category=Internships" class="stat-counter-card">
+              <div class="stat-icon-wrapper internships"><i class="fa-solid fa-user-gear"></i></div>
+              <div class="stat-details">
+                <h3>${internshipsCount}</h3>
+                <p>Tech Internships</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Directory Feed Switcher -->
       <section class="section">
         <div class="container container-feed">
-          <div class="section-header">
-            <div>
-              <span class="subheading">Active Listings</span>
-              <h2>Recent Opportunities</h2>
+          <div class="section-header text-center">
+            <span class="subheading">Active Curations</span>
+            <h2>Recent Opportunities</h2>
+            <p>Explore the latest verified items updated hours ago.</p>
+          </div>
+
+          <!-- Feed tabs -->
+          <div class="directory-tabs-wrapper animate-fade-in-up">
+            <div class="directory-tabs">
+              <button class="directory-tab active" data-category="All">All Resources</button>
+              <button class="directory-tab" data-category="Jobs">Jobs</button>
+              <button class="directory-tab" data-category="Grants">Grants</button>
+              <button class="directory-tab" data-category="Scholarships">Scholarships</button>
+              <button class="directory-tab" data-category="Internships">Internships</button>
             </div>
-            <a href="#opportunities" class="btn btn-outline btn-sm">See Full Directory <i class="fa-solid fa-arrow-right"></i></a>
           </div>
 
           <div class="opportunities-grid single-column-feed" id="home-opportunities-grid">
             ${latestOpps.map((opp) => this.cardTemplate(opp)).join('')}
           </div>
+          
+          <div class="flex-center mt-4">
+            <a href="#opportunities" class="btn btn-outline">See Full Opportunities Directory <i class="fa-solid fa-arrow-right"></i></a>
+          </div>
         </div>
       </section>
 
+      <!-- Explore Categories grid -->
       <section class="section section-alt">
         <div class="container">
           <div class="section-header text-center">
@@ -1343,6 +1485,7 @@ const App = {
         </div>
       </section>
 
+      <!-- Community Alert Outreach -->
       <section class="section">
         <div class="container container-narrow">
           <div class="newsletter-card animate-fade-in-up">
@@ -1374,6 +1517,7 @@ const App = {
 
     // Categories filter options
     const categoryOptions = ['All', ...new Set(opps.map(o => o.category))].map(c => `<option value="${c}">${c}</option>`).join('');
+
     return `
       <section class="section">
         <div class="container container-feed">
@@ -1383,35 +1527,69 @@ const App = {
             <p>Explore active internships, startup grants, fully-funded scholarships, and developer jobs.</p>
           </div>
 
-          <!-- Centered Filter Bar -->
-          <div class="directory-filter-card animate-fade-in-up">
-            <div class="filter-search-wrapper">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, skills, organization...">
+          <!-- Advanced Tab Switcher -->
+          <div class="directory-tabs-wrapper animate-fade-in-up">
+            <div class="directory-tabs" id="directory-nav-tabs">
+              <button class="directory-tab active" data-category="All">All Resources</button>
+              <button class="directory-tab" data-category="Jobs">Jobs</button>
+              <button class="directory-tab" data-category="Grants">Grants</button>
+              <button class="directory-tab" data-category="Scholarships">Scholarships</button>
+              <button class="directory-tab" data-category="Internships">Internships</button>
+            </div>
+          </div>
+
+          <!-- Centered Filter Console -->
+          <div class="directory-filter-console animate-fade-in-up">
+            <div class="filter-primary-row">
+              <div class="filter-search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, organization, skills...">
+              </div>
+              <button id="adv-filter-toggle" class="btn btn-outline" aria-expanded="false" aria-controls="adv-filter-drawer">
+                <i class="fa-solid fa-sliders"></i> <span>Filters</span>
+              </button>
             </div>
             
-            <div class="filter-controls-row">
-              <select id="opp-cat-filter" class="admin-form-control">
-                <option value="All">All Categories</option>
-                ${categoryOptions}
-              </select>
+            <!-- Collapsible Filters Drawer -->
+            <div id="adv-filter-drawer" class="directory-advanced-filters" style="max-height: 0; overflow: hidden; transition: max-height var(--transition-normal);">
+              <div class="advanced-filters-grid">
+                <div class="form-group-filter">
+                  <label for="opp-country-filter">Country Target</label>
+                  <select id="opp-country-filter" class="admin-form-control">
+                    <option value="All">All Countries</option>
+                    ${countryOptions}
+                  </select>
+                </div>
 
-              <select id="opp-country-filter" class="admin-form-control">
-                <option value="All">All Countries</option>
-                ${countryOptions}
-              </select>
+                <div class="form-group-filter">
+                  <label for="opp-remote-filter">Workplace Setting</label>
+                  <select id="opp-remote-filter" class="admin-form-control">
+                    <option value="All">All Settings</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Onsite">Onsite</option>
+                  </select>
+                </div>
 
-              <select id="opp-remote-filter" class="admin-form-control">
-                <option value="All">All Workplace</option>
-                <option value="Remote">Remote</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Onsite">Onsite</option>
-              </select>
+                <div class="form-group-filter">
+                  <label for="opp-level-filter">Target Level</label>
+                  <select id="opp-level-filter" class="admin-form-control">
+                    <option value="All">All Target Levels</option>
+                    <option value="Graduate">Graduate</option>
+                    <option value="Entry Level">Entry Level</option>
+                    <option value="Mid Level">Mid Level</option>
+                    <option value="Senior">Senior</option>
+                  </select>
+                </div>
 
-              <select id="opp-sort" class="admin-form-control">
-                <option value="latest">Latest Added</option>
-                <option value="deadline">Deadline Approaching</option>
-              </select>
+                <div class="form-group-filter">
+                  <label for="opp-sort">Sort Listings By</label>
+                  <select id="opp-sort" class="admin-form-control">
+                    <option value="latest">Latest Added</option>
+                    <option value="deadline">Approaching Deadline</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
