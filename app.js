@@ -2,7 +2,7 @@
    AFRI TECH HUB - APPLICATION LOGIC & ROUTER
    ========================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   App.init();
 });
 
@@ -11,36 +11,39 @@ const App = {
   state: {
     opportunities: [],
     categories: [],
-    theme: 'light',
-    currentPage: 'home',
-    visibleLimit: 6,         // limit for opportunities page pagination
-    homeVisibleLimit: 6,     // limit for home page listings
-    editingPostId: null,     // holds ID of post being edited, if any
-    activeDashboardTab: 'overview' // 'overview', 'posts', 'create', 'categories', 'subscribers', 'messages'
+    theme: "light",
+    currentPage: "home",
+    visibleLimit: 6, // limit for opportunities page pagination
+    homeVisibleLimit: 6, // limit for home page listings
+    editingPostId: null, // holds ID of post being edited, if any
+    activeDashboardTab: "overview", // 'overview', 'posts', 'create', 'categories', 'subscribers', 'messages'
   },
 
   // DOM Cache for static container items
   nodes: {
-    content: document.getElementById('app-content'),
-    navLinks: document.querySelectorAll('.nav-link'),
-    navBrand: document.getElementById('nav-brand'),
-    themeToggle: document.getElementById('theme-toggle'),
-    themeIcon: document.getElementById('theme-icon'),
-    menuToggle: document.getElementById('menu-toggle'),
-    navMenu: document.getElementById('nav-menu'),
-    scrollTopBtn: document.getElementById('scroll-top-btn'),
-    toast: document.getElementById('toast-alert'),
-    toastMsg: document.getElementById('toast-message'),
-    progressBar: document.getElementById('scroll-progress-bar')
+    content: document.getElementById("app-content"),
+    navLinks: document.querySelectorAll(".sidebar-link"),
+    navBrand: document.getElementById("nav-brand"),
+    themeToggle: document.getElementById("theme-toggle"),
+    themeIcon: document.getElementById("theme-icon"),
+    menuToggle: document.getElementById("menu-toggle"),
+    navMenu: document.getElementById("workspace-sidebar"),
+    scrollTopBtn: document.getElementById("scroll-top-btn"),
+    toast: document.getElementById("toast-alert"),
+    toastMsg: document.getElementById("toast-message"),
+    progressBar: document.getElementById("scroll-progress-bar"),
+    sidebar: document.getElementById("workspace-sidebar"),
+    sidebarBackdrop: document.getElementById("sidebar-backdrop"),
+    sidebarCloseBtn: document.getElementById("sidebar-close-btn")
   },
 
   init() {
     // Load database and categories
     this.refreshState();
-    
+
     // Bind Event Listeners
     this.bindEvents();
-    
+
     // Set Theme
     this.initTheme();
 
@@ -55,96 +58,144 @@ const App = {
 
   bindEvents() {
     // Hash routing
-    window.addEventListener('hashchange', () => this.router());
+    window.addEventListener("hashchange", () => this.router());
 
     // Theme toggle button
-    this.nodes.themeToggle.addEventListener('click', () => this.toggleTheme());
+    this.nodes.themeToggle.addEventListener("click", () => this.toggleTheme());
 
-    // Mobile nav toggle
-    this.nodes.menuToggle.addEventListener('click', () => {
-      this.nodes.navMenu.classList.toggle('active');
-      this.nodes.menuToggle.classList.toggle('active');
+    // Mobile nav toggle (opens sidebar drawer)
+    this.nodes.menuToggle.addEventListener("click", () => {
+      const isActive = this.nodes.sidebar.classList.toggle("active");
+      this.nodes.sidebarBackdrop.classList.toggle("active");
+      this.nodes.menuToggle.classList.toggle("active");
+      this.nodes.menuToggle.setAttribute(
+        "aria-expanded",
+        isActive ? "true" : "false"
+      );
     });
 
-    // Close mobile nav when clicking a link
-    this.nodes.navMenu.addEventListener('click', (e) => {
-      if (e.target.classList.contains('nav-link')) {
-        this.nodes.navMenu.classList.remove('active');
-        this.nodes.menuToggle.classList.remove('active');
+    // Close mobile nav close button click
+    if (this.nodes.sidebarCloseBtn) {
+      this.nodes.sidebarCloseBtn.addEventListener("click", () => {
+        this.nodes.sidebar.classList.remove("active");
+        this.nodes.sidebarBackdrop.classList.remove("active");
+        this.nodes.menuToggle.classList.remove("active");
+        this.nodes.menuToggle.setAttribute("aria-expanded", "false");
+      });
+    }
+
+    // Close mobile nav backdrop click
+    if (this.nodes.sidebarBackdrop) {
+      this.nodes.sidebarBackdrop.addEventListener("click", () => {
+        this.nodes.sidebar.classList.remove("active");
+        this.nodes.sidebarBackdrop.classList.remove("active");
+        this.nodes.menuToggle.classList.remove("active");
+        this.nodes.menuToggle.setAttribute("aria-expanded", "false");
+      });
+    }
+
+    // Close mobile nav when clicking a sidebar link
+    this.nodes.sidebar.addEventListener("click", (e) => {
+      if (e.target.closest(".sidebar-link")) {
+        this.nodes.sidebar.classList.remove("active");
+        this.nodes.sidebarBackdrop.classList.remove("active");
+        this.nodes.menuToggle.classList.remove("active");
+        this.nodes.menuToggle.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    // Close mobile nav with Escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (this.nodes.sidebar.classList.contains("active")) {
+          this.nodes.sidebar.classList.remove("active");
+          this.nodes.sidebarBackdrop.classList.remove("active");
+          this.nodes.menuToggle.classList.remove("active");
+          this.nodes.menuToggle.setAttribute("aria-expanded", "false");
+        }
       }
     });
 
     // Scroll events: scroll-to-top visibility and progress calculation
-    window.addEventListener('scroll', () => {
+    window.addEventListener("scroll", () => {
       // Scroll to Top visibility toggle
       if (window.scrollY > 300) {
-        this.nodes.scrollTopBtn.classList.add('visible');
+        this.nodes.scrollTopBtn.classList.add("visible");
       } else {
-        this.nodes.scrollTopBtn.classList.remove('visible');
+        this.nodes.scrollTopBtn.classList.remove("visible");
       }
 
       // Progress bar calculation
-      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const winScroll =
+        document.body.scrollTop || document.documentElement.scrollTop;
+      const height =
+        document.documentElement.scrollHeight -
+        document.documentElement.clientHeight;
       const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
       if (this.nodes.progressBar) {
-        this.nodes.progressBar.style.width = scrolled + '%';
+        this.nodes.progressBar.style.width = scrolled + "%";
       }
     });
 
     // Scroll to Top action
-    this.nodes.scrollTopBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.nodes.scrollTopBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   },
 
   // --- Theme Management ---
   initTheme() {
-    const savedTheme = localStorage.getItem('ath_theme') || 'light';
+    const savedTheme = localStorage.getItem("ath_theme") || "light";
     this.state.theme = savedTheme;
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-mode');
-      this.nodes.themeIcon.className = 'fa-solid fa-sun';
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark-mode");
+      this.nodes.themeIcon.className = "fa-solid fa-sun";
+      this.nodes.themeToggle.setAttribute("aria-pressed", "true");
     } else {
-      document.body.classList.remove('dark-mode');
-      this.nodes.themeIcon.className = 'fa-solid fa-moon';
+      document.body.classList.remove("dark-mode");
+      this.nodes.themeIcon.className = "fa-solid fa-moon";
+      this.nodes.themeToggle.setAttribute("aria-pressed", "false");
     }
   },
 
   toggleTheme() {
-    if (this.state.theme === 'light') {
-      this.state.theme = 'dark';
-      document.body.classList.add('dark-mode');
-      this.nodes.themeIcon.className = 'fa-solid fa-sun';
+    if (this.state.theme === "light") {
+      this.state.theme = "dark";
+      document.body.classList.add("dark-mode");
+      this.nodes.themeIcon.className = "fa-solid fa-sun";
+      this.nodes.themeToggle.setAttribute("aria-pressed", "true");
     } else {
-      this.state.theme = 'light';
-      document.body.classList.remove('dark-mode');
-      this.nodes.themeIcon.className = 'fa-solid fa-moon';
+      this.state.theme = "light";
+      document.body.classList.remove("dark-mode");
+      this.nodes.themeIcon.className = "fa-solid fa-moon";
+      this.nodes.themeToggle.setAttribute("aria-pressed", "false");
     }
-    localStorage.setItem('ath_theme', this.state.theme);
+    localStorage.setItem("ath_theme", this.state.theme);
   },
 
   // --- Toast Alert Helper ---
-  showToast(message, type = 'success') {
+  showToast(message, type = "success") {
     this.nodes.toastMsg.textContent = message;
     this.nodes.toast.className = `alert-popup ${type} active`;
+    this.nodes.toast.setAttribute("aria-hidden", "false");
     setTimeout(() => {
-      this.nodes.toast.classList.remove('active');
+      this.nodes.toast.classList.remove("active");
+      this.nodes.toast.setAttribute("aria-hidden", "true");
     }, 4000);
   },
 
   // --- Router Engine ---
   router() {
-    const hash = window.location.hash || '#home';
+    const hash = window.location.hash || "#home";
     let route = hash;
     let queryParams = {};
 
     // Scroll to top on navigation
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Parse Query Parameters (e.g. #opportunities?category=Jobs)
-    if (hash.includes('?')) {
-      const parts = hash.split('?');
+    if (hash.includes("?")) {
+      const parts = hash.split("?");
       route = parts[0];
       const queryStr = parts[1];
       const params = new URLSearchParams(queryStr);
@@ -154,12 +205,13 @@ const App = {
     }
 
     // Dynamic ID routing check (e.g. #post/tef-entrepreneurship-2026)
-    if (route.startsWith('#post/')) {
+    if (route.startsWith("#post/")) {
       const postId = route.substring(6); // Extract ID
-      this.state.currentPage = 'post-detail';
-      this.updateNavbarActiveState('opportunities');
-      this.syncSEO('post-detail', { postId });
-      this.renderView('post-detail', { postId });
+      this.state.currentPage = "opportunities";
+      this.state.activePostId = postId;
+      this.updateNavbarActiveState("opportunities");
+      this.syncSEO("opportunities", { postId });
+      this.renderView("opportunities", { postId });
       return;
     }
 
@@ -169,17 +221,20 @@ const App = {
     this.updateNavbarActiveState(pageName);
 
     // Route guards
-    if (pageName === 'admin-dashboard') {
-      if (sessionStorage.getItem('ath_admin_logged_in') !== 'true') {
-        window.location.hash = '#admin-login';
-        this.showToast('Authentication required to access the Admin Panel.', 'error');
+    if (pageName === "admin-dashboard") {
+      if (sessionStorage.getItem("ath_admin_logged_in") !== "true") {
+        window.location.hash = "#admin-login";
+        this.showToast(
+          "Authentication required to access the Admin Panel.",
+          "error",
+        );
         return;
       }
     }
 
-    if (pageName === 'admin-login') {
-      if (sessionStorage.getItem('ath_admin_logged_in') === 'true') {
-        window.location.hash = '#admin-dashboard';
+    if (pageName === "admin-login") {
+      if (sessionStorage.getItem("ath_admin_logged_in") === "true") {
+        window.location.hash = "#admin-dashboard";
         return;
       }
     }
@@ -192,11 +247,13 @@ const App = {
   },
 
   updateNavbarActiveState(pageName) {
-    this.nodes.navLinks.forEach(link => {
-      if (link.getAttribute('data-route') === pageName) {
-        link.classList.add('active');
+    this.nodes.navLinks.forEach((link) => {
+      if (link.getAttribute("data-route") === pageName) {
+        link.classList.add("active");
+        link.setAttribute("aria-current", "page");
       } else {
-        link.classList.remove('active');
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
       }
     });
   },
@@ -204,35 +261,45 @@ const App = {
   // --- Dynamic SEO synchronization ---
   syncSEO(pageName, params = {}) {
     const metaDesc = document.querySelector('meta[name="description"]');
-    let title = 'Afri Tech Hub | Opportunities Directory';
-    let desc = 'Empowering African innovators by curating jobs, grants, scholarships, and fellowships. Zero signup required.';
+    let title = "Afri Tech Hub | Opportunities Directory";
+    let desc =
+      "Empowering African innovators by curating jobs, grants, scholarships, and fellowships. Zero signup required.";
 
-    if (pageName === 'home') {
-      title = 'Afri Tech Hub | Empowering African Entrepreneurs & Youth';
-      desc = 'Discover verified entry-level tech opportunities, grants, and scholarships across Africa. Access is completely open and free with no login required.';
-    } else if (pageName === 'opportunities') {
-      title = 'Browse Tech Opportunities & Funding | Afri Tech Hub';
-      desc = 'Search and filter active tech jobs, graduate trainee programmes, fully-funded scholarships, and startup grants.';
-    } else if (pageName === 'categories') {
-      title = 'Explore Opportunity Categories | Afri Tech Hub';
-      desc = 'Navigate tailored lists of fellowships, internships, business funding, and tech vacancies.';
-    } else if (pageName === 'about') {
-      title = 'About Us | Afri Tech Hub Mission & Team';
-      desc = 'Learn how Afri Tech Hub curates resource listings to support the next generation of African digital professionals.';
-    } else if (pageName === 'faq') {
-      title = 'Frequently Asked Questions | Afri Tech Hub';
-      desc = 'Find answers on opportunity verification, application processes, and joining the WhatsApp community.';
-    } else if (pageName === 'contact') {
-      title = 'Contact Support & Inquiry | Afri Tech Hub';
-      desc = 'Get in touch with Afri Tech Hub to share vacancy listings, submit feedback, or partner with us.';
-    } else if (pageName === 'admin-login') {
-      title = 'Admin Portal Authentication | Afri Tech Hub';
-      desc = 'Secure gateway for administrators to login and edit active database postings.';
-    } else if (pageName === 'admin-dashboard') {
-      title = 'Admin Panel Overview | Afri Tech Hub';
-      desc = 'Database management panel for Afri Tech Hub administrators.';
-    } else if (pageName === 'post-detail' && params.postId) {
-      const opp = DataStore.getOpportunities(true).find(o => o.id === params.postId);
+    if (pageName === "home") {
+      title = "Afri Tech Hub | Empowering African Entrepreneurs & Youth";
+      desc =
+        "Discover verified entry-level tech opportunities, grants, and scholarships across Africa. Access is completely open and free with no login required.";
+    } else if (pageName === "opportunities") {
+      title = "Browse Tech Opportunities & Funding | Afri Tech Hub";
+      desc =
+        "Search and filter active tech jobs, graduate trainee programmes, fully-funded scholarships, and startup grants.";
+    } else if (pageName === "categories") {
+      title = "Explore Opportunity Categories | Afri Tech Hub";
+      desc =
+        "Navigate tailored lists of fellowships, internships, business funding, and tech vacancies.";
+    } else if (pageName === "about") {
+      title = "About Us | Afri Tech Hub Mission & Team";
+      desc =
+        "Learn how Afri Tech Hub curates resource listings to support the next generation of African digital professionals.";
+    } else if (pageName === "faq") {
+      title = "Frequently Asked Questions | Afri Tech Hub";
+      desc =
+        "Find answers on opportunity verification, application processes, and joining the WhatsApp community.";
+    } else if (pageName === "contact") {
+      title = "Contact Support & Inquiry | Afri Tech Hub";
+      desc =
+        "Get in touch with Afri Tech Hub to share vacancy listings, submit feedback, or partner with us.";
+    } else if (pageName === "admin-login") {
+      title = "Admin Portal Authentication | Afri Tech Hub";
+      desc =
+        "Secure gateway for administrators to login and edit active database postings.";
+    } else if (pageName === "admin-dashboard") {
+      title = "Admin Panel Overview | Afri Tech Hub";
+      desc = "Database management panel for Afri Tech Hub administrators.";
+    } else if (pageName === "post-detail" && params.postId) {
+      const opp = DataStore.getOpportunities(true).find(
+        (o) => o.id === params.postId,
+      );
       if (opp) {
         title = `${opp.title} at ${opp.company} | Afri Tech Hub`;
         desc = opp.shortDescription;
@@ -240,57 +307,77 @@ const App = {
     }
 
     document.title = title;
-    if (metaDesc) metaDesc.setAttribute('content', desc);
+    if (metaDesc) metaDesc.setAttribute("content", desc);
   },
 
   // ==========================================================================
   // VIEW RENDERERS & TEMPLATES
   // ==========================================================================
-  
+
   renderView(view, params = {}) {
     this.renderSkeleton();
 
     setTimeout(() => {
-      let htmlContent = '';
-      
+      let htmlContent = "";
+
       switch (view) {
-        case 'home':
+        case "home":
           htmlContent = this.templateHome();
           break;
-        case 'opportunities':
+        case "opportunities":
           htmlContent = this.templateOpportunities(params);
           break;
-        case 'categories':
+        case "categories":
           htmlContent = this.templateCategories();
           break;
-        case 'about':
+        case "about":
           htmlContent = this.templateAbout();
           break;
-        case 'faq':
+        case "faq":
           htmlContent = this.templateFAQ();
           break;
-        case 'contact':
+        case "contact":
           htmlContent = this.templateContact();
           break;
-        case 'privacy':
+        case "privacy":
           htmlContent = this.templatePrivacy();
           break;
-        case 'terms':
+        case "terms":
           htmlContent = this.templateTerms();
           break;
-        case 'post-detail':
+        case "post-detail":
           htmlContent = this.templateSinglePost(params.postId);
           break;
-        case 'admin-login':
+        case "admin-login":
           htmlContent = this.templateAdminLogin();
           break;
-        case 'admin-dashboard':
-          htmlContent = this.templateAdminDashboard(this.state.activeDashboardTab);
+        case "admin-dashboard":
+          htmlContent = this.templateAdminDashboard(
+            this.state.activeDashboardTab,
+          );
           break;
         default:
           htmlContent = this.templateHome();
       }
-      
+
+      // Update workspace header title
+      const titleEl = document.getElementById("view-title");
+      if (titleEl) {
+        const titleMap = {
+          "home": "Dashboard Overview",
+          "opportunities": "Opportunities Directory",
+          "categories": "Opportunity Categories",
+          "about": "About AfriTech Hub",
+          "faq": "Frequently Asked Questions",
+          "contact": "Contact Support",
+          "privacy": "Privacy Policy",
+          "terms": "Terms of Use",
+          "admin-login": "Admin Authentication",
+          "admin-dashboard": "Admin Control Panel"
+        };
+        titleEl.textContent = titleMap[view] || "AfriTech Hub";
+      }
+
       this.nodes.content.innerHTML = htmlContent;
       this.bindViewEvents(view, params);
     }, 200); // Premium brief transition delay
@@ -301,7 +388,10 @@ const App = {
       <div class="container skeleton-container">
         <div class="skeleton-box skeleton-header-title"></div>
         <div class="opportunities-grid">
-          ${Array(3).fill().map(() => `
+          ${Array(3)
+            .fill()
+            .map(
+              () => `
             <div class="opportunity-card skeleton-card">
               <div class="skeleton-box skeleton-image"></div>
               <div class="skeleton-body">
@@ -314,34 +404,42 @@ const App = {
                 </div>
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </div>
       </div>
     `;
   },
 
   bindViewEvents(view, params) {
-    if (view === 'home') {
-      const searchInput = document.getElementById('home-search');
-      const pills = document.querySelectorAll('.home-filter-pill');
-      const cardsGrid = document.getElementById('home-opportunities-grid');
-      const searchBtn = document.getElementById('home-search-btn');
+    if (view === "home") {
+      const searchInput = document.getElementById("home-search");
+      const pills = document.querySelectorAll(".home-filter-pill");
+      const cardsGrid = document.getElementById("home-opportunities-grid");
+      const searchBtn = document.getElementById("home-search-btn");
 
       const filterHomeListings = () => {
-        const query = searchInput.value.trim().toLowerCase();
-        const activePill = document.querySelector('.home-filter-pill.active');
-        const cat = activePill ? activePill.getAttribute('data-category') : 'All';
-        
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        const activePill = document.querySelector(".home-filter-pill.active");
+        const cat = activePill
+          ? activePill.getAttribute("data-category")
+          : "All";
+
         let filtered = DataStore.getOpportunities();
-        if (cat !== 'All') {
-          filtered = filtered.filter(opp => opp.category.toLowerCase() === cat.toLowerCase());
+        if (cat !== "All") {
+          filtered = filtered.filter(
+            (opp) => opp.category.toLowerCase() === cat.toLowerCase(),
+          );
         }
         if (query) {
-          filtered = filtered.filter(opp => 
-            opp.title.toLowerCase().includes(query) || 
-            opp.company.toLowerCase().includes(query) || 
-            opp.shortDescription.toLowerCase().includes(query) ||
-            (opp.skills && opp.skills.some(s => s.toLowerCase().includes(query)))
+          filtered = filtered.filter(
+            (opp) =>
+              opp.title.toLowerCase().includes(query) ||
+              opp.company.toLowerCase().includes(query) ||
+              opp.shortDescription.toLowerCase().includes(query) ||
+              (opp.skills &&
+                opp.skills.some((s) => s.toLowerCase().includes(query))),
           );
         }
 
@@ -355,62 +453,82 @@ const App = {
             </div>
           `;
         } else {
-          cardsGrid.innerHTML = subset.map(opp => this.cardTemplate(opp)).join('');
+          cardsGrid.innerHTML = subset
+            .map((opp) => this.cardTemplate(opp))
+            .join("");
         }
       };
 
-      pills.forEach(pill => {
-        pill.addEventListener('click', () => {
-          pills.forEach(p => p.classList.remove('active'));
-          pill.classList.add('active');
-          filterHomeListings();
+      if (pills && pills.length) {
+        pills.forEach((pill) => {
+          pill.addEventListener("click", () => {
+            pills.forEach((p) => p.classList.remove("active"));
+            pill.classList.add("active");
+            filterHomeListings();
+          });
         });
-      });
+      }
 
-      searchInput.addEventListener('input', filterHomeListings);
-      searchBtn.addEventListener('click', filterHomeListings);
+      if (searchInput) searchInput.addEventListener("input", filterHomeListings);
+      if (searchBtn) searchBtn.addEventListener("click", filterHomeListings);
 
       // Accordions
-      const faqItems = document.querySelectorAll('.faq-item');
-      faqItems.forEach(item => {
-        const btn = item.querySelector('.faq-question-btn');
-        btn.addEventListener('click', () => {
-          const isActive = item.classList.contains('active');
-          faqItems.forEach(i => i.classList.remove('active'));
-          if (!isActive) item.classList.add('active');
+      const faqItems = document.querySelectorAll(".faq-item");
+      if (faqItems && faqItems.length) {
+        faqItems.forEach((item) => {
+          const btn = item.querySelector(".faq-question-btn");
+          if (btn) {
+            btn.addEventListener("click", () => {
+              const isActive = item.classList.contains("active");
+              faqItems.forEach((i) => i.classList.remove("active"));
+              if (!isActive) item.classList.add("active");
+            });
+          }
         });
-      });
+      }
 
       // Newsletter
-      const newsletterForm = document.getElementById('home-newsletter-form');
-      newsletterForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = newsletterForm.querySelector('input').value.trim();
-        if (email) {
-          const added = DataStore.addSubscriber(email);
-          if (added) {
-            this.showToast('Thank you! You have been successfully subscribed to newsletter updates.', 'success');
-          } else {
-            this.showToast('You are already subscribed to the newsletter!', 'info');
+      const newsletterForm = document.getElementById("home-newsletter-form");
+      if (newsletterForm) {
+        newsletterForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const email = newsletterForm.querySelector("input").value.trim();
+          if (email) {
+            const added = DataStore.addSubscriber(email);
+            if (added) {
+              this.showToast(
+                "Thank you! You have been successfully subscribed to newsletter updates.",
+                "success",
+              );
+            } else {
+              this.showToast(
+                "You are already subscribed to the newsletter!",
+                "info",
+              );
+            }
+            newsletterForm.reset();
           }
-          newsletterForm.reset();
-        }
-      });
+        });
+      }
     }
 
-    if (view === 'opportunities') {
-      const searchInput = document.getElementById('opp-search');
-      const categorySelect = document.getElementById('opp-cat-filter');
-      const countrySelect = document.getElementById('opp-country-filter');
-      const remoteSelect = document.getElementById('opp-remote-filter');
-      const experienceSelect = document.getElementById('opp-exp-filter');
-      const sortSelect = document.getElementById('opp-sort');
-      const cardsGrid = document.getElementById('opp-grid');
-      const loadMoreBtn = document.getElementById('load-more-btn');
+    if (view === "opportunities") {
+      const searchInput = document.getElementById("opp-search");
+      const categorySelect = document.getElementById("opp-cat-filter");
+      const countrySelect = document.getElementById("opp-country-filter");
+      const remoteSelect = document.getElementById("opp-remote-filter");
+      const sortSelect = document.getElementById("opp-sort");
+      const listPane = document.getElementById("split-pane-list");
+      const detailsPane = document.getElementById("split-pane-details");
 
-      // Sync route query parameters
+      // Sync route query parameters if coming from dashboard categories click
       if (params.category) {
         categorySelect.value = params.category;
+      }
+      
+      // If we deep linked into a post (e.g. #post/tef-entrepreneurship-2026), highlight that
+      if (params.postId) {
+        this.state.activePostId = params.postId;
       }
 
       const updateList = () => {
@@ -418,160 +536,203 @@ const App = {
         const cat = categorySelect.value;
         const country = countrySelect.value;
         const remote = remoteSelect.value;
-        const exp = experienceSelect.value;
         const sort = sortSelect.value;
 
         let filtered = DataStore.getOpportunities();
 
-        if (cat !== 'All') {
-          filtered = filtered.filter(opp => opp.category.toLowerCase() === cat.toLowerCase());
+        if (cat !== "All") {
+          filtered = filtered.filter(
+            (opp) => opp.category.toLowerCase() === cat.toLowerCase(),
+          );
         }
-        if (country !== 'All') {
-          filtered = filtered.filter(opp => opp.country && opp.country.toLowerCase() === country.toLowerCase());
+        if (country !== "All") {
+          filtered = filtered.filter(
+            (opp) =>
+              opp.country &&
+              opp.country.toLowerCase() === country.toLowerCase(),
+          );
         }
-        if (remote !== 'All') {
-          filtered = filtered.filter(opp => opp.remote && opp.remote.toLowerCase() === remote.toLowerCase());
-        }
-        if (exp !== 'All') {
-          filtered = filtered.filter(opp => opp.experienceLevel && opp.experienceLevel.toLowerCase() === exp.toLowerCase());
+        if (remote !== "All") {
+          filtered = filtered.filter(
+            (opp) =>
+              opp.remote && opp.remote.toLowerCase() === remote.toLowerCase(),
+          );
         }
         if (query) {
-          filtered = filtered.filter(opp => 
-            opp.title.toLowerCase().includes(query) || 
-            opp.company.toLowerCase().includes(query) || 
-            opp.shortDescription.toLowerCase().includes(query) ||
-            opp.location.toLowerCase().includes(query) ||
-            (opp.skills && opp.skills.some(s => s.toLowerCase().includes(query)))
+          filtered = filtered.filter(
+            (opp) =>
+              opp.title.toLowerCase().includes(query) ||
+              opp.company.toLowerCase().includes(query) ||
+              opp.shortDescription.toLowerCase().includes(query) ||
+              opp.location.toLowerCase().includes(query) ||
+              (opp.skills &&
+                opp.skills.some((s) => s.toLowerCase().includes(query))),
           );
         }
 
         // Apply Sorting
-        if (sort === 'latest') {
+        if (sort === "latest") {
           filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-        } else if (sort === 'deadline') {
+        } else if (sort === "deadline") {
           filtered.sort((a, b) => {
-            // Put 'Rolling' deadlines at the end
-            if (a.deadline === 'Rolling') return 1;
-            if (b.deadline === 'Rolling') return -1;
+            if (a.deadline === "Rolling") return 1;
+            if (b.deadline === "Rolling") return -1;
             return new Date(a.deadline) - new Date(b.deadline);
           });
         }
 
-        const totalMatching = filtered.length;
-        const subset = filtered.slice(0, this.state.visibleLimit);
-
-        if (subset.length === 0) {
-          cardsGrid.innerHTML = `
-            <div class="no-results" style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
-              <i class="fa-solid fa-magnifying-glass" style="font-size: 40px; color: var(--text-muted); margin-bottom: 15px;"></i>
-              <h3>No matching opportunities found</h3>
-              <p>Try broadening your filter criteria or search terms.</p>
+        if (filtered.length === 0) {
+          listPane.innerHTML = `
+            <div class="no-results">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <h3>No match found</h3>
+              <p>Try modifying your keyword search.</p>
             </div>
           `;
-          if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+          this.state.activePostId = null;
+          this.renderSplitDetails(null);
         } else {
-          cardsGrid.innerHTML = subset.map(opp => this.cardTemplate(opp)).join('');
-          
-          if (loadMoreBtn) {
-            if (subset.length < totalMatching) {
-              loadMoreBtn.style.display = 'inline-flex';
-            } else {
-              loadMoreBtn.style.display = 'none';
-            }
+          // If activePostId is not set, or is not in the current filtered subset, select first
+          const activeInFiltered = filtered.find(o => o.id === this.state.activePostId);
+          if (!activeInFiltered) {
+            this.state.activePostId = filtered[0].id;
+          }
+
+          listPane.innerHTML = filtered
+            .map((opp) => this.compactCardTemplate(opp, opp.id === this.state.activePostId))
+            .join("");
+
+          // Render details for active item
+          this.renderSplitDetails(this.state.activePostId);
+
+          // Add click listeners to compact cards
+          const compactCards = listPane.querySelectorAll(".compact-opp-card");
+          compactCards.forEach((card) => {
+            card.addEventListener("click", () => {
+              const oppId = card.getAttribute("data-id");
+              this.state.activePostId = oppId;
+              
+              // Remove active classes and set active on clicked card
+              compactCards.forEach(c => c.classList.remove("active"));
+              card.classList.add("active");
+
+              // Render details pane
+              this.renderSplitDetails(oppId);
+
+              // Mobile split-pane slide-in toggle
+              if (window.innerWidth < 768) {
+                detailsPane.classList.add("active");
+              }
+            });
+            
+            // Support keyboard accessibility
+            card.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                card.click();
+              }
+            });
+          });
+
+          // Check if viewport is mobile and we deep-linked a post, slide it in automatically
+          if (params.postId && window.innerWidth < 768) {
+            detailsPane.classList.add("active");
           }
         }
       };
 
-      searchInput.addEventListener('input', updateList);
-      categorySelect.addEventListener('change', updateList);
-      countrySelect.addEventListener('change', updateList);
-      remoteSelect.addEventListener('change', updateList);
-      experienceSelect.addEventListener('change', updateList);
-      sortSelect.addEventListener('change', updateList);
-
-      if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', () => {
-          this.state.visibleLimit += 6;
-          updateList();
-        });
-      }
+      searchInput.addEventListener("input", updateList);
+      categorySelect.addEventListener("change", updateList);
+      countrySelect.addEventListener("change", updateList);
+      remoteSelect.addEventListener("change", updateList);
+      sortSelect.addEventListener("change", updateList);
 
       updateList(); // Run filters initially
     }
 
-    if (view === 'contact') {
-      const contactForm = document.getElementById('contact-form');
-      contactForm.addEventListener('submit', (e) => {
+    if (view === "contact") {
+      const contactForm = document.getElementById("contact-form");
+      contactForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        const name = document.getElementById('contact-name').value.trim();
-        const email = document.getElementById('contact-email').value.trim();
-        const subject = document.getElementById('contact-subject').value.trim();
-        const body = document.getElementById('contact-message').value.trim();
+        const name = document.getElementById("contact-name").value.trim();
+        const email = document.getElementById("contact-email").value.trim();
+        const subject = document.getElementById("contact-subject").value.trim();
+        const body = document.getElementById("contact-message").value.trim();
 
         if (name && email && subject && body) {
           DataStore.addContactMessage({ name, email, subject, body });
-          this.showToast('Your message has been submitted. We will review and respond shortly!', 'success');
+          this.showToast(
+            "Your message has been submitted. We will review and respond shortly!",
+            "success",
+          );
           contactForm.reset();
         }
       });
     }
 
-    if (view === 'post-detail') {
+    if (view === "post-detail") {
       // Dynamic share buttons logic
-      const copyLinkBtn = document.getElementById('share-copy-link');
+      const copyLinkBtn = document.getElementById("share-copy-link");
       if (copyLinkBtn) {
-        copyLinkBtn.addEventListener('click', (e) => {
+        copyLinkBtn.addEventListener("click", (e) => {
           e.preventDefault();
-          navigator.clipboard.writeText(window.location.href)
-            .then(() => this.showToast('Link copied to clipboard!', 'success'))
-            .catch(() => this.showToast('Failed to copy link.', 'error'));
+          navigator.clipboard
+            .writeText(window.location.href)
+            .then(() => this.showToast("Link copied to clipboard!", "success"))
+            .catch(() => this.showToast("Failed to copy link.", "error"));
         });
       }
     }
 
-    if (view === 'admin-login') {
-      const loginForm = document.getElementById('admin-login-form');
-      loginForm.addEventListener('submit', (e) => {
+    if (view === "admin-login") {
+      const loginForm = document.getElementById("admin-login-form");
+      loginForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        const user = document.getElementById('admin-username').value.trim();
-        const pass = document.getElementById('admin-password').value.trim();
+        const user = document.getElementById("admin-username").value.trim();
+        const pass = document.getElementById("admin-password").value.trim();
 
         // Standard auth validation credentials
-        if (user === 'admin' && pass === 'adminpassword') {
-          sessionStorage.setItem('ath_admin_logged_in', 'true');
-          this.state.activeDashboardTab = 'overview';
-          window.location.hash = '#admin-dashboard';
-          this.showToast('Logged in successfully. Welcome to the Admin Panel!', 'success');
+        if (user === "admin" && pass === "adminpassword") {
+          sessionStorage.setItem("ath_admin_logged_in", "true");
+          this.state.activeDashboardTab = "overview";
+          window.location.hash = "#admin-dashboard";
+          this.showToast(
+            "Logged in successfully. Welcome to the Admin Panel!",
+            "success",
+          );
         } else {
-          this.showToast('Invalid administrator username or password.', 'error');
+          this.showToast(
+            "Invalid administrator username or password.",
+            "error",
+          );
         }
       });
     }
 
-    if (view === 'admin-dashboard') {
+    if (view === "admin-dashboard") {
       // Logout button
-      const logoutBtn = document.getElementById('admin-logout-btn');
+      const logoutBtn = document.getElementById("admin-logout-btn");
       if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-          sessionStorage.removeItem('ath_admin_logged_in');
-          this.showToast('Logged out of Admin Portal.', 'info');
-          window.location.hash = '#home';
+        logoutBtn.addEventListener("click", () => {
+          sessionStorage.removeItem("ath_admin_logged_in");
+          this.showToast("Logged out of Admin Portal.", "info");
+          window.location.hash = "#home";
         });
       }
 
       // Sidebar tab selectors
-      const tabBtns = document.querySelectorAll('.dashboard-tab-btn');
-      tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const tab = btn.getAttribute('data-tab');
+      const tabBtns = document.querySelectorAll(".dashboard-tab-btn");
+      tabBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const tab = btn.getAttribute("data-tab");
           this.state.activeDashboardTab = tab;
-          
+
           // Clear edit mode state if navigating away from create/edit tab
-          if (tab !== 'create') {
+          if (tab !== "create") {
             this.state.editingPostId = null;
           }
 
-          this.renderView('admin-dashboard');
+          this.renderView("admin-dashboard");
         });
       });
 
@@ -581,25 +742,28 @@ const App = {
   },
 
   bindDashboardTabEvents(tab) {
-    const viewport = document.getElementById('dashboard-viewport');
+    const viewport = document.getElementById("dashboard-viewport");
     this.refreshState();
 
-    if (tab === 'posts') {
-      const search = document.getElementById('admin-post-search');
-      const tableBody = document.getElementById('admin-post-table-body');
-      
+    if (tab === "posts") {
+      const search = document.getElementById("admin-post-search");
+      const tableBody = document.getElementById("admin-post-table-body");
+
       const filterTable = () => {
         const query = search.value.trim().toLowerCase();
         let filtered = DataStore.getOpportunities(true);
         if (query) {
-          filtered = filtered.filter(o => 
-            o.title.toLowerCase().includes(query) ||
-            o.company.toLowerCase().includes(query) ||
-            o.category.toLowerCase().includes(query)
+          filtered = filtered.filter(
+            (o) =>
+              o.title.toLowerCase().includes(query) ||
+              o.company.toLowerCase().includes(query) ||
+              o.category.toLowerCase().includes(query),
           );
         }
 
-        tableBody.innerHTML = filtered.map(opp => `
+        tableBody.innerHTML = filtered
+          .map(
+            (opp) => `
           <tr>
             <td>
               <div class="admin-table-title">${opp.title}</div>
@@ -608,11 +772,11 @@ const App = {
             <td>${opp.category}</td>
             <td>${opp.deadline}</td>
             <td>
-              <span class="badge-status ${opp.status || 'published'}">${opp.status || 'published'}</span>
+              <span class="badge-status ${opp.status || "published"}">${opp.status || "published"}</span>
             </td>
             <td>
-              <button class="btn btn-feature ${opp.featured ? 'active' : ''} btn-sm btn-feat-toggle" data-id="${opp.id}">
-                <i class="fa-solid fa-star"></i> ${opp.featured ? 'Featured' : 'Standard'}
+              <button class="btn btn-feature ${opp.featured ? "active" : ""} btn-sm btn-feat-toggle" data-id="${opp.id}">
+                <i class="fa-solid fa-star"></i> ${opp.featured ? "Featured" : "Standard"}
               </button>
             </td>
             <td>
@@ -622,47 +786,60 @@ const App = {
               </div>
             </td>
           </tr>
-        `).join('');
+        `,
+          )
+          .join("");
 
         // Re-bind actions
         this.bindTableActionListeners();
       };
 
-      search.addEventListener('input', filterTable);
+      search.addEventListener("input", filterTable);
       filterTable(); // Run initial listing
     }
 
-    if (tab === 'create') {
-      const form = document.getElementById('admin-opp-form');
-      const fileInput = document.getElementById('adm-opp-img-file');
-      const textUrlInput = document.getElementById('adm-opp-img-url');
-      const filePreview = document.getElementById('adm-img-preview');
-      const skillsInput = document.getElementById('adm-opp-skills');
-      const skillsContainer = document.getElementById('adm-skills-tags');
+    if (tab === "create") {
+      const form = document.getElementById("admin-opp-form");
+      const fileInput = document.getElementById("adm-opp-img-file");
+      const textUrlInput = document.getElementById("adm-opp-img-url");
+      const filePreview = document.getElementById("adm-img-preview");
+      const skillsInput = document.getElementById("adm-opp-skills");
+      const skillsContainer = document.getElementById("adm-skills-tags");
 
       let currentSkills = [];
 
       // Edit Mode Preloading
       if (this.state.editingPostId) {
-        const opp = this.state.opportunities.find(o => o.id === this.state.editingPostId);
+        const opp = this.state.opportunities.find(
+          (o) => o.id === this.state.editingPostId,
+        );
         if (opp) {
-          document.getElementById('adm-opp-title').value = opp.title;
-          document.getElementById('adm-opp-company').value = opp.company;
-          document.getElementById('adm-opp-category').value = opp.category;
-          document.getElementById('adm-opp-experience').value = opp.experienceLevel || 'Graduate';
-          document.getElementById('adm-opp-remote').value = opp.remote || 'Onsite';
-          document.getElementById('adm-opp-country').value = opp.country || '';
-          document.getElementById('adm-opp-location').value = opp.location;
-          document.getElementById('adm-opp-deadline').value = opp.deadline;
-          document.getElementById('adm-opp-short').value = opp.shortDescription;
-          document.getElementById('adm-opp-desc').value = opp.description;
-          document.getElementById('adm-opp-req').value = opp.requirements.join('\n');
-          document.getElementById('adm-opp-ben').value = opp.benefits.join('\n');
-          document.getElementById('adm-opp-url').value = opp.applyUrl;
-          document.getElementById('adm-opp-status').value = opp.status || 'published';
-          document.getElementById('adm-opp-featured').checked = opp.featured || false;
-          
-          if (opp.image && !opp.image.startsWith('https://images.unsplash.com')) {
+          document.getElementById("adm-opp-title").value = opp.title;
+          document.getElementById("adm-opp-company").value = opp.company;
+          document.getElementById("adm-opp-category").value = opp.category;
+          document.getElementById("adm-opp-experience").value =
+            opp.experienceLevel || "Graduate";
+          document.getElementById("adm-opp-remote").value =
+            opp.remote || "Onsite";
+          document.getElementById("adm-opp-country").value = opp.country || "";
+          document.getElementById("adm-opp-location").value = opp.location;
+          document.getElementById("adm-opp-deadline").value = opp.deadline;
+          document.getElementById("adm-opp-short").value = opp.shortDescription;
+          document.getElementById("adm-opp-desc").value = opp.description;
+          document.getElementById("adm-opp-req").value =
+            opp.requirements.join("\n");
+          document.getElementById("adm-opp-ben").value =
+            opp.benefits.join("\n");
+          document.getElementById("adm-opp-url").value = opp.applyUrl;
+          document.getElementById("adm-opp-status").value =
+            opp.status || "published";
+          document.getElementById("adm-opp-featured").checked =
+            opp.featured || false;
+
+          if (
+            opp.image &&
+            !opp.image.startsWith("https://images.unsplash.com")
+          ) {
             filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
           } else if (opp.image) {
             textUrlInput.value = opp.image;
@@ -677,20 +854,20 @@ const App = {
       }
 
       // Handle Skills comma trigger
-      skillsInput.addEventListener('keydown', (e) => {
-        if (e.key === ',' || e.key === 'Enter') {
+      skillsInput.addEventListener("keydown", (e) => {
+        if (e.key === "," || e.key === "Enter") {
           e.preventDefault();
-          const val = skillsInput.value.trim().replace(/,/g, '');
+          const val = skillsInput.value.trim().replace(/,/g, "");
           if (val && !currentSkills.includes(val)) {
             currentSkills.push(val);
             this.renderSkillsTags(currentSkills, skillsContainer);
           }
-          skillsInput.value = '';
+          skillsInput.value = "";
         }
       });
 
       // Handle Image File Preloading Preview
-      fileInput.addEventListener('change', () => {
+      fileInput.addEventListener("change", () => {
         const file = fileInput.files[0];
         if (file) {
           const reader = new FileReader();
@@ -702,7 +879,7 @@ const App = {
       });
 
       // Handle Image URL input sync preview
-      textUrlInput.addEventListener('input', () => {
+      textUrlInput.addEventListener("input", () => {
         const val = textUrlInput.value.trim();
         if (val) {
           filePreview.innerHTML = `<img src="${val}" alt="Preview">`;
@@ -710,36 +887,50 @@ const App = {
       });
 
       // Form Submit CRUD
-      form.addEventListener('submit', (e) => {
+      form.addEventListener("submit", (e) => {
         e.preventDefault();
-        
-        const title = document.getElementById('adm-opp-title').value.trim();
-        const company = document.getElementById('adm-opp-company').value.trim();
-        const category = document.getElementById('adm-opp-category').value;
-        const exp = document.getElementById('adm-opp-experience').value;
-        const remote = document.getElementById('adm-opp-remote').value;
-        const country = document.getElementById('adm-opp-country').value.trim();
-        const location = document.getElementById('adm-opp-location').value.trim();
-        const deadline = document.getElementById('adm-opp-deadline').value;
-        const shortDesc = document.getElementById('adm-opp-short').value.trim();
-        const description = document.getElementById('adm-opp-desc').value.trim();
-        const reqText = document.getElementById('adm-opp-req').value.trim();
-        const benText = document.getElementById('adm-opp-ben').value.trim();
-        const applyUrl = document.getElementById('adm-opp-url').value.trim();
-        const status = document.getElementById('adm-opp-status').value;
-        const featured = document.getElementById('adm-opp-featured').checked;
+
+        const title = document.getElementById("adm-opp-title").value.trim();
+        const company = document.getElementById("adm-opp-company").value.trim();
+        const category = document.getElementById("adm-opp-category").value;
+        const exp = document.getElementById("adm-opp-experience").value;
+        const remote = document.getElementById("adm-opp-remote").value;
+        const country = document.getElementById("adm-opp-country").value.trim();
+        const location = document
+          .getElementById("adm-opp-location")
+          .value.trim();
+        const deadline = document.getElementById("adm-opp-deadline").value;
+        const shortDesc = document.getElementById("adm-opp-short").value.trim();
+        const description = document
+          .getElementById("adm-opp-desc")
+          .value.trim();
+        const reqText = document.getElementById("adm-opp-req").value.trim();
+        const benText = document.getElementById("adm-opp-ben").value.trim();
+        const applyUrl = document.getElementById("adm-opp-url").value.trim();
+        const status = document.getElementById("adm-opp-status").value;
+        const featured = document.getElementById("adm-opp-featured").checked;
         const file = fileInput.files[0];
         const textUrl = textUrlInput.value.trim();
 
         const savePost = (imgData) => {
-          const requirements = reqText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-          const benefits = benText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-          
+          const requirements = reqText
+            .split("\n")
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0);
+          const benefits = benText
+            .split("\n")
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0);
+
           let id = this.state.editingPostId;
           if (!id) {
-            id = title.toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
+            id =
+              title
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)+/g, "") +
+              "-" +
+              Date.now().toString().slice(-4);
           }
 
           const targetPost = {
@@ -749,11 +940,13 @@ const App = {
             category,
             experienceLevel: exp,
             remote,
-            country: country || 'Global',
+            country: country || "Global",
             location,
-            date: this.state.editingPostId ? this.state.opportunities.find(o => o.id === id).date : new Date().toISOString().split('T')[0],
+            date: this.state.editingPostId
+              ? this.state.opportunities.find((o) => o.id === id).date
+              : new Date().toISOString().split("T")[0],
             deadline,
-            image: imgData || textUrl || '',
+            image: imgData || textUrl || "",
             shortDescription: shortDesc,
             description,
             requirements,
@@ -761,18 +954,20 @@ const App = {
             skills: currentSkills,
             applyUrl,
             featured,
-            trending: this.state.editingPostId ? this.state.opportunities.find(o => o.id === id).trending : false,
-            status
+            trending: this.state.editingPostId
+              ? this.state.opportunities.find((o) => o.id === id).trending
+              : false,
+            status,
           };
 
           DataStore.saveOpportunity(targetPost);
           this.refreshState();
-          
+
           this.state.editingPostId = null;
-          this.state.activeDashboardTab = 'posts';
-          this.renderView('admin-dashboard');
-          
-          this.showToast('Opportunity saved successfully!', 'success');
+          this.state.activeDashboardTab = "posts";
+          this.renderView("admin-dashboard");
+
+          this.showToast("Opportunity saved successfully!", "success");
         };
 
         if (file) {
@@ -781,9 +976,11 @@ const App = {
           reader.readAsDataURL(file);
         } else {
           // If editing and no image is uploaded/inserted, preserve existing
-          let existingImg = '';
+          let existingImg = "";
           if (this.state.editingPostId) {
-            const current = this.state.opportunities.find(o => o.id === this.state.editingPostId);
+            const current = this.state.opportunities.find(
+              (o) => o.id === this.state.editingPostId,
+            );
             if (current) existingImg = current.image;
           }
           savePost(existingImg);
@@ -791,88 +988,100 @@ const App = {
       });
     }
 
-    if (tab === 'categories') {
-      const form = document.getElementById('admin-cat-form');
-      const listContainer = document.getElementById('admin-categories-editor-list');
+    if (tab === "categories") {
+      const form = document.getElementById("admin-cat-form");
+      const listContainer = document.getElementById(
+        "admin-categories-editor-list",
+      );
 
-      form.addEventListener('submit', (e) => {
+      form.addEventListener("submit", (e) => {
         e.preventDefault();
-        const name = document.getElementById('adm-cat-name').value.trim();
-        const icon = document.getElementById('adm-cat-icon').value.trim();
-        const desc = document.getElementById('adm-cat-desc').value.trim();
+        const name = document.getElementById("adm-cat-name").value.trim();
+        const icon = document.getElementById("adm-cat-icon").value.trim();
+        const desc = document.getElementById("adm-cat-desc").value.trim();
 
         if (name && icon && desc) {
           DataStore.saveCategory({ name, icon, count: 0, description: desc });
           this.refreshState();
           form.reset();
-          this.showToast('Category created successfully.', 'success');
-          this.renderView('admin-dashboard');
+          this.showToast("Category created successfully.", "success");
+          this.renderView("admin-dashboard");
         }
       });
 
       // Delete listener
-      listContainer.addEventListener('click', (e) => {
-        const delBtn = e.target.closest('.btn-cat-delete');
+      listContainer.addEventListener("click", (e) => {
+        const delBtn = e.target.closest(".btn-cat-delete");
         if (delBtn) {
-          const name = delBtn.getAttribute('data-name');
-          if (confirm(`Are you sure you want to delete the "${name}" category? Posts under this category will remain, but counts will be removed.`)) {
+          const name = delBtn.getAttribute("data-name");
+          if (
+            confirm(
+              `Are you sure you want to delete the "${name}" category? Posts under this category will remain, but counts will be removed.`,
+            )
+          ) {
             DataStore.deleteCategory(name);
             this.refreshState();
-            this.showToast(`Category "${name}" deleted.`, 'info');
-            this.renderView('admin-dashboard');
+            this.showToast(`Category "${name}" deleted.`, "info");
+            this.renderView("admin-dashboard");
           }
         }
       });
     }
 
-    if (tab === 'subscribers') {
-      const copyBtn = document.getElementById('admin-sub-copy');
-      const listContainer = document.getElementById('admin-subscribers-list');
+    if (tab === "subscribers") {
+      const copyBtn = document.getElementById("admin-sub-copy");
+      const listContainer = document.getElementById("admin-subscribers-list");
 
       if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
+        copyBtn.addEventListener("click", () => {
           const emails = DataStore.getSubscribers();
           if (emails.length === 0) {
-            this.showToast('No subscribers to copy.', 'error');
+            this.showToast("No subscribers to copy.", "error");
             return;
           }
-          navigator.clipboard.writeText(emails.join(', '))
-            .then(() => this.showToast('All subscriber emails copied to clipboard!', 'success'));
+          navigator.clipboard
+            .writeText(emails.join(", "))
+            .then(() =>
+              this.showToast(
+                "All subscriber emails copied to clipboard!",
+                "success",
+              ),
+            );
         });
       }
 
-      listContainer.addEventListener('click', (e) => {
-        const delBtn = e.target.closest('.btn-sub-delete');
+      listContainer.addEventListener("click", (e) => {
+        const delBtn = e.target.closest(".btn-sub-delete");
         if (delBtn) {
-          const email = delBtn.getAttribute('data-email');
+          const email = delBtn.getAttribute("data-email");
           if (confirm(`Remove ${email} from subscribers list?`)) {
             DataStore.deleteSubscriber(email);
-            this.showToast(`${email} removed.`, 'info');
-            this.renderView('admin-dashboard');
+            this.showToast(`${email} removed.`, "info");
+            this.renderView("admin-dashboard");
           }
         }
       });
     }
 
-    if (tab === 'messages') {
-      const listContainer = document.getElementById('admin-messages-list');
-      
-      listContainer.addEventListener('click', (e) => {
-        const replyToggle = e.target.closest('.btn-msg-reply');
-        const deleteBtn = e.target.closest('.btn-msg-delete');
+    if (tab === "messages") {
+      const listContainer = document.getElementById("admin-messages-list");
+
+      listContainer.addEventListener("click", (e) => {
+        const replyToggle = e.target.closest(".btn-msg-reply");
+        const deleteBtn = e.target.closest(".btn-msg-delete");
 
         if (replyToggle) {
-          const id = replyToggle.getAttribute('data-id');
+          const id = replyToggle.getAttribute("data-id");
           DataStore.toggleReplyMessage(id);
-          this.renderView('admin-dashboard');
+          this.renderView("admin-dashboard");
         }
 
         if (deleteBtn) {
-          const id = deleteBtn.getAttribute('data-id');
-          if (confirm('Delete this message permanently?')) {
+          const id = deleteBtn.getAttribute("data-id");
+          if (confirm("Delete this message permanently?")) {
             DataStore.deleteMessage(id);
-            this.showToast('Inquiry message deleted.', 'info');
-            this.renderView('admin-dashboard');
+            this.showToast("Inquiry message deleted.", "info");
+            this.renderView("admin-dashboard");
           }
         }
       });
@@ -880,17 +1089,21 @@ const App = {
   },
 
   renderSkillsTags(skills, container) {
-    container.innerHTML = skills.map(skill => `
+    container.innerHTML = skills
+      .map(
+        (skill) => `
       <span class="skill-tag">
         ${skill}
         <button type="button" class="btn-skill-remove" data-val="${skill}"><i class="fa-solid fa-xmark"></i></button>
       </span>
-    `).join('');
+    `,
+      )
+      .join("");
 
     // Bind remove button clicks
-    container.querySelectorAll('.btn-skill-remove').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const skill = btn.getAttribute('data-val');
+    container.querySelectorAll(".btn-skill-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const skill = btn.getAttribute("data-val");
         const index = skills.indexOf(skill);
         if (index > -1) {
           skills.splice(index, 1);
@@ -901,43 +1114,47 @@ const App = {
   },
 
   bindTableActionListeners() {
-    const tableBody = document.getElementById('admin-post-table-body');
-    
+    const tableBody = document.getElementById("admin-post-table-body");
+
     // Toggle Featured Status
-    tableBody.querySelectorAll('.btn-feat-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        const opp = this.state.opportunities.find(o => o.id === id);
+    tableBody.querySelectorAll(".btn-feat-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const opp = this.state.opportunities.find((o) => o.id === id);
         if (opp) {
           opp.featured = !opp.featured;
           DataStore.saveOpportunity(opp);
           this.refreshState();
-          this.showToast(`Opportunity featured status updated.`, 'success');
-          this.renderView('admin-dashboard');
+          this.showToast(`Opportunity featured status updated.`, "success");
+          this.renderView("admin-dashboard");
         }
       });
     });
 
     // Delete Opportunity
-    tableBody.querySelectorAll('.btn-opp-delete').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        if (confirm('Are you sure you want to delete this opportunity posting permanently?')) {
+    tableBody.querySelectorAll(".btn-opp-delete").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        if (
+          confirm(
+            "Are you sure you want to delete this opportunity posting permanently?",
+          )
+        ) {
           DataStore.deleteOpportunity(id);
           this.refreshState();
-          this.showToast('Opportunity deleted.', 'info');
-          this.renderView('admin-dashboard');
+          this.showToast("Opportunity deleted.", "info");
+          this.renderView("admin-dashboard");
         }
       });
     });
 
     // Edit Opportunity
-    tableBody.querySelectorAll('.btn-opp-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
+    tableBody.querySelectorAll(".btn-opp-edit").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
         this.state.editingPostId = id;
-        this.state.activeDashboardTab = 'create';
-        this.renderView('admin-dashboard');
+        this.state.activeDashboardTab = "create";
+        this.renderView("admin-dashboard");
       });
     });
   },
@@ -947,15 +1164,21 @@ const App = {
   // ==========================================================================
 
   cardTemplate(opp) {
-    const formattedDeadline = opp.deadline === 'Rolling' ? 'Rolling' : opp.deadline;
-    const skillsBadges = opp.skills ? opp.skills.slice(0, 3).map(s => `<span class="card-skill-badge">${s}</span>`).join('') : '';
+    const formattedDeadline =
+      opp.deadline === "Rolling" ? "Rolling" : opp.deadline;
+    const skillsBadges = opp.skills
+      ? opp.skills
+          .slice(0, 3)
+          .map((s) => `<span class="card-skill-badge">${s}</span>`)
+          .join("")
+      : "";
 
     return `
       <article class="opportunity-card animate-fade-in-up">
         <div class="card-image-container">
           <img src="${opp.image}" alt="${opp.company} Cover" loading="lazy">
-          <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
-          ${opp.remote ? `<span class="remote-badge">${opp.remote}</span>` : ''}
+          <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, "")}">${opp.category}</span>
+          ${opp.remote ? `<span class="remote-badge">${opp.remote}</span>` : ""}
         </div>
         <div class="card-body">
           <div class="card-meta">
@@ -979,169 +1202,249 @@ const App = {
     `;
   },
 
-  templateHome() {
-    // Split opportunities into categories
-    const featuredOpps = this.state.opportunities.filter(opp => opp.featured && (opp.status === 'published' || !opp.status)).slice(0, 3);
-    const latestOpps = this.state.opportunities.filter(opp => opp.status === 'published' || !opp.status).slice(0, 6);
-
-    const categoriesGrid = this.state.categories.slice(0, 6).map(cat => `
-      <a href="#opportunities?category=${encodeURIComponent(cat.name)}" class="category-card animate-fade-in-up">
-        <div class="category-icon">
-          <i class="fa-solid fa-${cat.icon}"></i>
+  compactCardTemplate(opp, isActive = false) {
+    const activeClass = isActive ? 'active' : '';
+    return `
+      <div class="compact-opp-card ${activeClass}" data-id="${opp.id}" role="button" tabindex="0">
+        <div class="compact-card-header">
+          <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
+          <span class="compact-card-date">${opp.date}</span>
         </div>
-        <h3 class="category-title">${cat.name}</h3>
-        <p class="category-desc">${cat.description}</p>
-        <span class="category-count">${cat.count} listings</span>
-      </a>
-    `).join('');
+        <h4 class="compact-card-title">${opp.title}</h4>
+        <div class="compact-card-meta">
+          <span><i class="fa-solid fa-building"></i> ${opp.company}</span>
+          <span><i class="fa-solid fa-location-dot"></i> ${opp.location}</span>
+        </div>
+        <div class="compact-card-footer">
+          <span class="badge-status ${opp.remote === 'Remote' ? 'draft' : 'published'}">${opp.remote || 'Onsite'}</span>
+          <span class="compact-card-deadline"><i class="fa-solid fa-calendar-xmark"></i> ${opp.deadline}</span>
+        </div>
+      </div>
+    `;
+  },
+
+  renderSplitDetails(oppId) {
+    const detailsPane = document.getElementById('split-pane-details');
+    if (!detailsPane) return;
+
+    if (!oppId) {
+      detailsPane.innerHTML = `
+        <div class="split-details-placeholder">
+          <i class="fa-solid fa-briefcase"></i>
+          <h3>No Opportunity Selected</h3>
+          <p>Choose an item from the left pane to view full requirements, compensation packages, and application details.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const opp = DataStore.getOpportunities(true).find(o => o.id === oppId);
+    if (!opp) {
+      detailsPane.innerHTML = `
+        <div class="split-details-placeholder">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <h3>Post Not Found</h3>
+          <p>This listing may have been archived, removed, or expired.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const requirementsList = opp.requirements.map(req => `<li><i class="fa-regular fa-square-check"></i> ${req}</li>`).join('');
+    const benefitsList = opp.benefits.map(ben => `<li><i class="fa-regular fa-star"></i> ${ben}</li>`).join('');
+    const skillsBadges = opp.skills ? opp.skills.map(s => `<span class="badge-skill">${s}</span>`).join('') : '';
+
+    detailsPane.innerHTML = `
+      <div class="split-details-header">
+        <button id="detail-close-btn" class="detail-close-btn" aria-label="Back to List">
+          <i class="fa-solid fa-arrow-left"></i> Back to List
+        </button>
+        <div class="split-details-meta-top">
+          <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
+          ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ''}
+          ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ''}
+        </div>
+        <h2 class="split-details-title">${opp.title}</h2>
+        <div class="split-details-company-strip">
+          <span class="company-logo-placeholder"><i class="fa-solid fa-building"></i></span>
+          <div class="company-strip-info">
+            <h4>${opp.company}</h4>
+            <p><i class="fa-solid fa-location-dot"></i> ${opp.location} • Posted: ${opp.date}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="split-details-scroll-content">
+        <!-- Visual cover image -->
+        <div class="split-details-image">
+          <img src="${opp.image}" alt="${opp.company} cover" loading="lazy">
+        </div>
+
+        <div class="split-details-body">
+          <div class="split-details-section">
+            <h3>Description</h3>
+            <p class="pre-wrap">${opp.description}</p>
+          </div>
+
+          ${requirementsList ? `
+          <div class="split-details-section">
+            <h3>Requirements & Eligibility</h3>
+            <ul class="custom-list">
+              ${requirementsList}
+            </ul>
+          </div>
+          ` : ''}
+
+          ${benefitsList ? `
+          <div class="split-details-section">
+            <h3>Benefits & Compensation</h3>
+            <ul class="custom-list">
+              ${benefitsList}
+            </ul>
+          </div>
+          ` : ''}
+
+          ${skillsBadges ? `
+          <div class="split-details-section">
+            <h3>Target Skills</h3>
+            <div class="detail-skills-container">
+              ${skillsBadges}
+            </div>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="split-details-action-bar">
+        <div class="deadline-indicator">
+          <i class="fa-solid fa-calendar-days"></i>
+          <div>
+            <h5>Deadline</h5>
+            <p>${opp.deadline}</p>
+          </div>
+        </div>
+        <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-now-split">Apply Now <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+      </div>
+    `;
+
+    // Bind back button listener for mobile view
+    const closeBtn = document.getElementById('detail-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        detailsPane.classList.remove('active');
+      });
+    }
+  },
+
+  templateHome() {
+    const opps = this.state.opportunities.filter(o => o.status === 'published' || !o.status);
+    
+    // Count stats
+    const jobsCount = opps.filter(o => o.category.toLowerCase() === 'jobs').length;
+    const grantsCount = opps.filter(o => o.category.toLowerCase() === 'grants' || o.category.toLowerCase() === 'business-funding').length;
+    const scholarshipsCount = opps.filter(o => o.category.toLowerCase() === 'scholarships').length;
+    const internshipsCount = opps.filter(o => o.category.toLowerCase() === 'internships').length;
+
+    // Featured Listings
+    const featured = opps.filter(o => o.featured).slice(0, 4);
 
     return `
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <div class="container hero-grid">
-          <div class="hero-content">
-            <div class="hero-tag-badge animate-fade-in-up">
-              <i class="fa-solid fa-certificate color-accent"></i> No Signups, No Accounts. 100% Free & Open Access
+      <div class="dashboard-overview-container">
+        <!-- Welcoming banner -->
+        <div class="dashboard-banner">
+          <div class="banner-content">
+            <h1>Welcome to AfriTech Workspace</h1>
+            <p>Access curated scholarships, grants, internships, and remote developer jobs designed specifically for African youth and tech talent. Open, verified, and 100% free.</p>
+          </div>
+          <div class="banner-badge">
+            <span class="live-dot-glow"></span>
+            <span>Verified Listings Only</span>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+          <a href="#opportunities?category=Jobs" class="metric-card">
+            <div class="metric-icon jobs"><i class="fa-solid fa-briefcase"></i></div>
+            <div class="metric-info">
+              <h3>${jobsCount}</h3>
+              <p>Jobs & Careers</p>
             </div>
-            <h1 class="hero-title animate-fade-in-up" style="animation-delay: 0.1s;">
-              Accelerating African <span class="highlight">Success</span>.
-            </h1>
-            <p class="hero-subtitle animate-fade-in-up" style="animation-delay: 0.2s;">
-              Find curated scholarships, startup grants, internships, and remote developer jobs designed specifically for African youth and tech talent.
-            </p>
-            
-            <!-- Quick Search Bar -->
-            <div class="hero-search-container animate-fade-in-up" style="animation-delay: 0.3s;">
-              <div class="filter-search-wrapper hero-search-wrapper">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="home-search" class="admin-form-control hero-search-input" placeholder="Search by roles, skills, or companies...">
-              </div>
-              <button class="btn btn-primary hero-search-btn" id="home-search-btn">Search</button>
+            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
+          </a>
+          <a href="#opportunities?category=Grants" class="metric-card">
+            <div class="metric-icon grants"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+            <div class="metric-info">
+              <h3>${grantsCount}</h3>
+              <p>Startup Grants</p>
             </div>
+            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
+          </a>
+          <a href="#opportunities?category=Scholarships" class="metric-card">
+            <div class="metric-icon scholarships"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="metric-info">
+              <h3>${scholarshipsCount}</h3>
+              <p>Scholarships</p>
+            </div>
+            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
+          </a>
+          <a href="#opportunities?category=Internships" class="metric-card">
+            <div class="metric-icon internships"><i class="fa-solid fa-user-gear"></i></div>
+            <div class="metric-info">
+              <h3>${internshipsCount}</h3>
+              <p>Tech Internships</p>
+            </div>
+            <span class="metric-arrow"><i class="fa-solid fa-angle-right"></i></span>
+          </a>
+        </div>
 
-            <!-- Call to Actions -->
-            <div class="hero-ctas animate-fade-in-up" style="animation-delay: 0.4s;">
-              <a href="#opportunities" class="btn btn-primary">Browse All Opportunities <i class="fa-solid fa-circle-chevron-right"></i></a>
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Join WhatsApp Hub</a>
+        <!-- Featured & Community Row -->
+        <div class="dashboard-split-row">
+          <!-- Featured opportunities card listing -->
+          <div class="dashboard-panel panel-featured">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-star color-accent"></i> Featured Listings</h3>
+              <a href="#opportunities" class="panel-action-link">Browse All</a>
+            </div>
+            <div class="featured-list-stack">
+              ${featured.length === 0 ? '<p class="muted">No featured opportunities listed today.</p>' : 
+                featured.map(o => `
+                  <div class="featured-item-row" data-id="${o.id}">
+                    <img src="${o.image}" alt="${o.company} logo" loading="lazy">
+                    <div class="featured-item-info">
+                      <h4>${o.title}</h4>
+                      <p>${o.company} • <span class="category-badge cat-${o.category.toLowerCase().replace(/[^a-z0-9]/g,'')}">${o.category}</span></p>
+                    </div>
+                    <a href="#post/${o.id}" class="btn btn-sm btn-outline">Details</a>
+                  </div>
+                `).join('')
+              }
             </div>
           </div>
-          
-          <div class="hero-visual animate-fade-in-up" style="animation-delay: 0.2s;">
-            <!-- Floating Cards or Vector Elements -->
-            <div class="visual-card main-visual-card">
-              <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80" alt="African Developers working together">
-              <div class="floating-badge badge-top-right">
-                <i class="fa-solid fa-briefcase"></i> 50+ New Jobs
-              </div>
-              <div class="floating-badge badge-bottom-left">
-                <i class="fa-solid fa-hand-holding-dollar"></i> $250k+ Grants
-              </div>
+
+          <!-- Community Card & Newsletter signup -->
+          <div class="dashboard-panel panel-community">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-users color-primary"></i> Hub Community</h3>
+            </div>
+            <div class="community-card-body">
+              <p>Join over 5,000+ members in our active WhatsApp community to get real-time opportunity alerts directly on your phone.</p>
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp w-100 mt-2 mb-3">
+                <i class="fa-brands fa-whatsapp"></i> Join WhatsApp Group
+              </a>
+              
+              <hr class="panel-divider">
+              
+              <h4>Subscribe to Weekly Roundup</h4>
+              <p class="muted">Get weekly curated internships and grants straight to your email inbox.</p>
+              <form id="home-newsletter-form" class="dashboard-newsletter-form">
+                <input type="email" class="admin-form-control" placeholder="yourname@gmail.com" required>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+              </form>
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- Quick Filter Pills section -->
-      <section class="section home-filters-section">
-        <div class="container flex-center">
-          <div class="home-filter-pills">
-            <button class="home-filter-pill active" data-category="All">All Feed</button>
-            <button class="home-filter-pill" data-category="Jobs">Jobs</button>
-            <button class="home-filter-pill" data-category="Internships">Internships</button>
-            <button class="home-filter-pill" data-category="Grants">Grants</button>
-            <button class="home-filter-pill" data-category="Scholarships">Scholarships</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Featured Opportunities Section -->
-      ${featuredOpps.length > 0 ? `
-      <section class="section section-alt">
-        <div class="container">
-          <div class="section-header text-center">
-            <span class="subheading subheading-accent"><i class="fa-solid fa-star"></i> Featured Listings</span>
-            <h2>Top Pick Opportunities</h2>
-            <p>Hand-picked opportunities offering top benefits, fully-funded packages, or global internships.</p>
-          </div>
-          <div class="opportunities-grid">
-            ${featuredOpps.map(opp => this.cardTemplate(opp)).join('')}
-          </div>
-        </div>
-      </section>
-      ` : ''}
-
-      <!-- Latest Opportunities Section -->
-      <section class="section">
-        <div class="container">
-          <div class="section-header">
-            <div>
-              <span class="subheading">Recently Updated</span>
-              <h2>Latest Opportunities</h2>
-            </div>
-            <a href="#opportunities" class="btn btn-outline">Explore Directory <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i></a>
-          </div>
-          <div class="opportunities-grid" id="home-opportunities-grid">
-            ${latestOpps.map(opp => this.cardTemplate(opp)).join('')}
-          </div>
-        </div>
-      </section>
-
-      <!-- Popular Categories Grid Section -->
-      <section class="section section-alt">
-        <div class="container">
-          <div class="section-header text-center">
-            <span class="subheading">Structured Categories</span>
-            <h2>Search by Category</h2>
-            <p>Explore resources categorized by application types to simplify your journey.</p>
-          </div>
-          <div class="categories-grid">
-            ${categoriesGrid}
-          </div>
-        </div>
-      </section>
-
-      <!-- Newsletter Subsection -->
-      <section class="section">
-        <div class="container">
-          <div class="newsletter-card">
-            <div class="newsletter-info">
-              <h2>Get Weekly Opportunities Direct to Your Inbox</h2>
-              <p class="newsletter-desc">Stay updated on newly listed remote entry-level software engineer jobs, scholarships, fellowships, and VC grants. Completely free. Unsubscribe anytime.</p>
-            </div>
-            <form id="home-newsletter-form" class="newsletter-form-container">
-              <div class="newsletter-form-wrapper">
-                <input type="email" class="newsletter-input" placeholder="Your professional email address" required>
-                <button type="submit" class="btn newsletter-btn">Subscribe</button>
-              </div>
-              <p class="newsletter-note">We protect your privacy. Zero spam. Safe unsubscribes.</p>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <!-- FAQs Home Accordions -->
-      <section class="section" style="background-color: var(--bg-tertiary); transition: background-color var(--transition-normal);">
-        <div class="container" style="max-width: 800px;">
-          <div class="section-header" style="text-align: center; margin-bottom: 50px;">
-            <span class="subheading" style="color: var(--color-primary); font-weight:700; text-transform:uppercase; font-size:13px; letter-spacing:1px;">Clarifications</span>
-            <h2>FAQs</h2>
-            <p>Quick answers about Afri Tech Hub and how we operate.</p>
-          </div>
-          <div class="faq-list">
-            ${DataStore.getFaqs().map(faq => `
-              <div class="faq-item">
-                <button class="faq-question-btn">
-                  <span>${faq.question}</span>
-                  <i class="fa-solid fa-chevron-down"></i>
-                </button>
-                <div class="faq-answer">
-                  <p>${faq.answer}</p>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </section>
+      </div>
     `;
   },
 
@@ -1156,96 +1459,59 @@ const App = {
     const categoryOptions = ['All', ...new Set(opps.map(o => o.category))].map(c => `<option value="${c}">${c}</option>`).join('');
 
     return `
-      <section class="section">
-        <div class="container">
-          <div class="section-header">
-            <div>
-              <span class="subheading">Filter & Discover</span>
-              <h2>Opportunities Directory</h2>
-              <p>Explore active internships, remote junior developer roles, graduate trainee placements, and seed grants.</p>
-            </div>
+      <div class="workspace-split-container">
+        <!-- Top Workspace Filter Bar -->
+        <div class="workspace-filter-bar">
+          <div class="filter-search-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, skills, orgs...">
           </div>
 
-          <!-- Advanced Multi-Column Filter Card -->
-          <div class="filter-card">
-            <div class="filter-grid">
-              <!-- Search query -->
-              <div class="filter-group">
-                <label for="opp-search">Keyword Search</label>
-                <div class="filter-search-wrapper">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" id="opp-search" class="admin-form-control" placeholder="Search title, skills, orgs...">
-                </div>
-              </div>
+          <div class="filter-dropdown-group">
+            <select id="opp-cat-filter" class="admin-form-control">
+              <option value="All">All Categories</option>
+              ${categoryOptions}
+            </select>
 
-              <!-- Category selector -->
-              <div class="filter-group">
-                <label for="opp-cat-filter">Category</label>
-                <select id="opp-cat-filter" class="admin-form-control">
-                  <option value="All">All Categories</option>
-                  ${categoryOptions}
-                </select>
-              </div>
+            <select id="opp-country-filter" class="admin-form-control">
+              <option value="All">All Countries</option>
+              ${countryOptions}
+            </select>
 
-              <!-- Country selector -->
-              <div class="filter-group">
-                <label for="opp-country-filter">Country</label>
-                <select id="opp-country-filter" class="admin-form-control">
-                  ${countryOptions}
-                </select>
-              </div>
+            <select id="opp-remote-filter" class="admin-form-control">
+              <option value="All">All Workplace</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Onsite">Onsite</option>
+            </select>
 
-              <!-- Remote/Onsite selector -->
-              <div class="filter-group">
-                <label for="opp-remote-filter">Workplace</label>
-                <select id="opp-remote-filter" class="admin-form-control">
-                  <option value="All">All Locations</option>
-                  <option value="Remote">Remote</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Onsite">Onsite</option>
-                </select>
-              </div>
-
-              <!-- Experience level selector -->
-              <div class="filter-group">
-                <label for="opp-exp-filter">Level / Target</label>
-                <select id="opp-exp-filter" class="admin-form-control">
-                  <option value="All">All Levels</option>
-                  <option value="Internship">Internship</option>
-                  <option value="Entry Level">Entry Level</option>
-                  <option value="Graduate">Graduate</option>
-                  <option value="Fellowship">Fellowship</option>
-                  <option value="Scholarship">Scholarship</option>
-                </select>
-              </div>
-
-              <!-- Sort selector (added in next row visually due to grid wrap) -->
-              <div class="filter-group">
-                <label for="opp-sort">Sort By</label>
-                <select id="opp-sort" class="admin-form-control">
-                  <option value="latest">Latest Added</option>
-                  <option value="deadline">Approaching Deadline</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Opportunities Card Grid -->
-          <div class="opportunities-grid" id="opp-grid">
-            <!-- Filled dynamically by updateList -->
-          </div>
-
-          <!-- Load More Pagination -->
-          <div class="flex-center mt-4">
-            <button class="btn btn-outline" id="load-more-btn" style="display: none;"><i class="fa-solid fa-spinner" style="margin-right:8px;"></i> Load More Opportunities</button>
+            <select id="opp-sort" class="admin-form-control">
+              <option value="latest">Latest Added</option>
+              <option value="deadline">Approaching Deadline</option>
+            </select>
           </div>
         </div>
-      </section>
+
+        <!-- Split Pane Layout -->
+        <div class="workspace-split-pane">
+          <!-- Left scrollable list -->
+          <div class="split-pane-list" id="split-pane-list">
+            <!-- Compact cards are rendered dynamically -->
+          </div>
+
+          <!-- Right sticky details review panel -->
+          <div class="split-pane-details" id="split-pane-details">
+            <!-- Full details are rendered dynamically -->
+          </div>
+        </div>
+      </div>
     `;
   },
 
   templateCategories() {
-    const list = this.state.categories.map(cat => `
+    const list = this.state.categories
+      .map(
+        (cat) => `
       <a href="#opportunities?category=${encodeURIComponent(cat.name)}" class="category-card animate-fade-in-up">
         <div class="category-icon">
           <i class="fa-solid fa-${cat.icon}"></i>
@@ -1254,7 +1520,9 @@ const App = {
         <p class="category-desc">${cat.description}</p>
         <span class="category-count">${cat.count} listings</span>
       </a>
-    `).join('');
+    `,
+      )
+      .join("");
 
     return `
       <section class="section">
@@ -1316,7 +1584,9 @@ const App = {
           </div>
 
           <div class="faq-list" id="faq-results">
-            ${DataStore.getFaqs().map(faq => `
+            ${DataStore.getFaqs()
+              .map(
+                (faq) => `
               <div class="faq-item">
                 <button class="faq-question-btn">
                   <span>${faq.question}</span>
@@ -1326,7 +1596,9 @@ const App = {
                   <p>${faq.answer}</p>
                 </div>
               </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         </div>
       </section>
@@ -1395,7 +1667,7 @@ const App = {
   },
 
   templateSinglePost(postId) {
-    const opp = DataStore.getOpportunities(true).find(o => o.id === postId);
+    const opp = DataStore.getOpportunities(true).find((o) => o.id === postId);
     if (!opp) {
       return `
         <div class="container text-center" style="padding:100px 24px;">
@@ -1407,15 +1679,27 @@ const App = {
       `;
     }
 
-    const requirementsList = opp.requirements.map(req => `<li><i class="fa-regular fa-square-check"></i> ${req}</li>`).join('');
-    const benefitsList = opp.benefits.map(ben => `<li><i class="fa-regular fa-star"></i> ${ben}</li>`).join('');
-    const skillsBadges = opp.skills ? opp.skills.map(s => `<span class="badge-skill">${s}</span>`).join('') : '';
+    const requirementsList = opp.requirements
+      .map(
+        (req) => `<li><i class="fa-regular fa-square-check"></i> ${req}</li>`,
+      )
+      .join("");
+    const benefitsList = opp.benefits
+      .map((ben) => `<li><i class="fa-regular fa-star"></i> ${ben}</li>`)
+      .join("");
+    const skillsBadges = opp.skills
+      ? opp.skills.map((s) => `<span class="badge-skill">${s}</span>`).join("")
+      : "";
 
     // Related Listings
     const related = DataStore.getOpportunities()
-      .filter(o => o.category.toLowerCase() === opp.category.toLowerCase() && o.id !== opp.id)
+      .filter(
+        (o) =>
+          o.category.toLowerCase() === opp.category.toLowerCase() &&
+          o.id !== opp.id,
+      )
       .slice(0, 3);
-    const relatedGrid = related.map(o => this.cardTemplate(o)).join('');
+    const relatedGrid = related.map((o) => this.cardTemplate(o)).join("");
 
     return `
       <section class="post-detail-section">
@@ -1428,9 +1712,9 @@ const App = {
             <!-- Left Side Core Content -->
             <div class="post-main-content">
               <div class="post-header-meta">
-                <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
-                ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ''}
-                ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ''}
+                <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, "")}">${opp.category}</span>
+                ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ""}
+                ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ""}
               </div>
               <h1 class="post-title">${opp.title}</h1>
               
@@ -1487,14 +1771,18 @@ const App = {
                 </div>
 
                 <!-- Skills tags -->
-                ${skillsBadges ? `
+                ${
+                  skillsBadges
+                    ? `
                 <div class="content-block">
                   <h3>Key Skills Target</h3>
                   <div class="detail-skills-container">
                     ${skillsBadges}
                   </div>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
             </div>
 
@@ -1514,19 +1802,19 @@ const App = {
                   </tr>
                   <tr>
                     <td><i class="fa-solid fa-layer-group"></i> Target level</td>
-                    <td>${opp.experienceLevel || 'Graduate'}</td>
+                    <td>${opp.experienceLevel || "Graduate"}</td>
                   </tr>
                   <tr>
                     <td><i class="fa-solid fa-map-location-dot"></i> Workplace</td>
-                    <td>${opp.remote || 'Onsite'}</td>
+                    <td>${opp.remote || "Onsite"}</td>
                   </tr>
                   <tr>
                     <td><i class="fa-solid fa-earth-africa"></i> Country</td>
-                    <td>${opp.country || 'Global'}</td>
+                    <td>${opp.country || "Global"}</td>
                   </tr>
                   <tr class="deadline-row">
                     <td><i class="fa-solid fa-calendar-xmark"></i> Deadline</td>
-                    <td>${opp.deadline === 'Rolling' ? 'Rolling' : opp.deadline}</td>
+                    <td>${opp.deadline === "Rolling" ? "Rolling" : opp.deadline}</td>
                   </tr>
                 </table>
 
@@ -1538,7 +1826,7 @@ const App = {
                   <div class="share-icons">
                     <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(opp.title)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on Twitter"><i class="fa-brands fa-x-twitter"></i></a>
                     <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + ' ' + window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + " " + window.location.href)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-share" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                     <button class="btn btn-outline btn-share" id="share-copy-link" aria-label="Copy Link"><i class="fa-solid fa-copy"></i></button>
                   </div>
                 </div>
@@ -1547,14 +1835,18 @@ const App = {
           </div>
           
           <!-- Related Opportunities Section -->
-          ${relatedGrid ? `
+          ${
+            relatedGrid
+              ? `
           <div class="related-listings-section">
             <h3><i class="fa-solid fa-cubes-stacked"></i> Related Listings</h3>
             <div class="opportunities-grid">
               ${relatedGrid}
             </div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
         </div>
       </section>
     `;
@@ -1588,20 +1880,22 @@ const App = {
   },
 
   templateAdminDashboard(activeTab) {
-    if (sessionStorage.getItem('ath_admin_logged_in') !== 'true') {
+    if (sessionStorage.getItem("ath_admin_logged_in") !== "true") {
       return this.templateAdminLogin();
     }
 
     const allOpps = DataStore.getOpportunities(true);
     const totalOpps = allOpps.length;
-    const publishedOpps = allOpps.filter(o => o.status === 'published' || !o.status).length;
-    const draftOpps = allOpps.filter(o => o.status === 'draft').length;
-    const archivedOpps = allOpps.filter(o => o.status === 'archived').length;
-    
+    const publishedOpps = allOpps.filter(
+      (o) => o.status === "published" || !o.status,
+    ).length;
+    const draftOpps = allOpps.filter((o) => o.status === "draft").length;
+    const archivedOpps = allOpps.filter((o) => o.status === "archived").length;
+
     const categoriesCount = DataStore.getCategories().length;
     const subscribersCount = DataStore.getSubscribers().length;
     const messagesCount = DataStore.getContactMessages().length;
-    const featuredCount = allOpps.filter(o => o.featured).length;
+    const featuredCount = allOpps.filter((o) => o.featured).length;
 
     return `
       <div class="container dashboard-container">
@@ -1622,22 +1916,22 @@ const App = {
         <div class="dashboard-layout">
           <!-- Sidebar Navigation Tabs -->
           <aside class="dashboard-sidebar animate-fade-in-up">
-            <button class="dashboard-tab-btn ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview">
+            <button class="dashboard-tab-btn ${activeTab === "overview" ? "active" : ""}" data-tab="overview">
               <i class="fa-solid fa-chart-pie"></i> Overview
             </button>
-            <button class="dashboard-tab-btn ${activeTab === 'posts' ? 'active' : ''}" data-tab="posts">
+            <button class="dashboard-tab-btn ${activeTab === "posts" ? "active" : ""}" data-tab="posts">
               <i class="fa-solid fa-table-list"></i> Manage Posts
             </button>
-            <button class="dashboard-tab-btn ${activeTab === 'create' ? 'active' : ''}" data-tab="create">
-              <i class="fa-solid fa-square-plus"></i> ${this.state.editingPostId ? 'Edit Post' : 'Add New Post'}
+            <button class="dashboard-tab-btn ${activeTab === "create" ? "active" : ""}" data-tab="create">
+              <i class="fa-solid fa-square-plus"></i> ${this.state.editingPostId ? "Edit Post" : "Add New Post"}
             </button>
-            <button class="dashboard-tab-btn ${activeTab === 'categories' ? 'active' : ''}" data-tab="categories">
+            <button class="dashboard-tab-btn ${activeTab === "categories" ? "active" : ""}" data-tab="categories">
               <i class="fa-solid fa-tags"></i> Edit Categories
             </button>
-            <button class="dashboard-tab-btn ${activeTab === 'subscribers' ? 'active' : ''}" data-tab="subscribers">
+            <button class="dashboard-tab-btn ${activeTab === "subscribers" ? "active" : ""}" data-tab="subscribers">
               <i class="fa-solid fa-envelope-open-text"></i> Subscribers (${subscribersCount})
             </button>
-            <button class="dashboard-tab-btn ${activeTab === 'messages' ? 'active' : ''}" data-tab="messages">
+            <button class="dashboard-tab-btn ${activeTab === "messages" ? "active" : ""}" data-tab="messages">
               <i class="fa-solid fa-inbox"></i> Inbox Inquiries (${messagesCount})
             </button>
           </aside>
@@ -1645,7 +1939,15 @@ const App = {
           <!-- Main Panel Content Viewport -->
           <main class="dashboard-main animate-fade-in" id="dashboard-viewport">
             ${this.renderDashboardTab(activeTab, {
-              totalOpps, publishedOpps, draftOpps, archivedOpps, categoriesCount, subscribersCount, messagesCount, featuredCount, allOpps
+              totalOpps,
+              publishedOpps,
+              draftOpps,
+              archivedOpps,
+              categoriesCount,
+              subscribersCount,
+              messagesCount,
+              featuredCount,
+              allOpps,
             })}
           </main>
         </div>
@@ -1654,7 +1956,7 @@ const App = {
   },
 
   renderDashboardTab(tab, data) {
-    if (tab === 'overview') {
+    if (tab === "overview") {
       return `
         <!-- Metrics Grid -->
         <div class="stats-grid animate-fade-in-up">
@@ -1724,31 +2026,43 @@ const App = {
           <div class="admin-card-body">
             <h3 style="margin-bottom:20px; font-size:16px;"><i class="fa-solid fa-arrows-rotate" style="color:var(--color-primary); margin-right:8px;"></i> Recent Post Updates</h3>
             <table style="width:100%; border-collapse:collapse; font-size:13px;">
-              ${data.allOpps.slice(0, 5).map(o => `
+              ${data.allOpps
+                .slice(0, 5)
+                .map(
+                  (o) => `
                 <tr style="border-bottom:1px solid var(--border-color);">
                   <td style="padding:10px 0; font-weight:700; color:var(--text-primary);">${o.title}</td>
-                  <td style="padding:10px 0; text-align:right;"><span class="badge-status ${o.status || 'published'}">${o.status || 'published'}</span></td>
+                  <td style="padding:10px 0; text-align:right;"><span class="badge-status ${o.status || "published"}">${o.status || "published"}</span></td>
                 </tr>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </table>
           </div>
 
           <div class="admin-card-body">
             <h3 style="margin-bottom:20px; font-size:16px;"><i class="fa-solid fa-inbox" style="color:var(--color-primary); margin-right:8px;"></i> Recent Inquiries</h3>
-            ${DataStore.getContactMessages().slice(0, 3).length === 0 ? '<p style="font-size:13px; color:var(--text-muted);">No messages in mailbox.</p>' : 
-              DataStore.getContactMessages().slice(0, 3).map(m => `
+            ${
+              DataStore.getContactMessages().slice(0, 3).length === 0
+                ? '<p style="font-size:13px; color:var(--text-muted);">No messages in mailbox.</p>'
+                : DataStore.getContactMessages()
+                    .slice(0, 3)
+                    .map(
+                      (m) => `
                 <div style="border-bottom:1px solid var(--border-color); padding:10px 0; font-size:13px;">
                   <div style="font-weight:700; color:var(--text-primary);">${m.name} <span style="font-weight:400; color:var(--text-muted); font-size:11px;">(${m.email})</span></div>
                   <div style="color:var(--text-secondary); margin-top:2px;">"${m.subject}"</div>
                 </div>
-              `).join('')
+              `,
+                    )
+                    .join("")
             }
           </div>
         </div>
       `;
     }
 
-    if (tab === 'posts') {
+    if (tab === "posts") {
       return `
         <div class="admin-card-body animate-fade-in-up">
           <div style="display:flex; justify-content:between; align-items:center; gap:20px; margin-bottom:25px; flex-wrap:wrap;">
@@ -1777,16 +2091,18 @@ const App = {
       `;
     }
 
-    if (tab === 'create') {
+    if (tab === "create") {
       const isEditing = !!this.state.editingPostId;
       const categories = DataStore.getCategories();
-      const categoryOptions = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+      const categoryOptions = categories
+        .map((c) => `<option value="${c.name}">${c.name}</option>`)
+        .join("");
 
       return `
         <div class="admin-card-body animate-fade-in-up">
           <h3 style="margin-bottom:25px; font-size:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
             <i class="fa-solid fa-bullhorn" style="color:var(--color-primary); margin-right:8px;"></i>
-            ${isEditing ? 'Edit Post Details' : 'Publish New Opportunity'}
+            ${isEditing ? "Edit Post Details" : "Publish New Opportunity"}
           </h3>
 
           <form id="admin-opp-form">
@@ -1924,9 +2240,11 @@ const App = {
       `;
     }
 
-    if (tab === 'categories') {
+    if (tab === "categories") {
       const categories = DataStore.getCategories();
-      const list = categories.map(c => `
+      const list = categories
+        .map(
+          (c) => `
         <div class="category-editor-card">
           <div class="category-editor-info">
             <div class="category-editor-icon"><i class="fa-solid fa-${c.icon}"></i></div>
@@ -1937,7 +2255,9 @@ const App = {
           </div>
           <button class="btn btn-delete btn-sm btn-cat-delete" data-name="${c.name}"><i class="fa-solid fa-trash-can"></i> Delete</button>
         </div>
-      `).join('');
+      `,
+        )
+        .join("");
 
       return `
         <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:30px;" class="animate-fade-in-up">
@@ -1972,7 +2292,7 @@ const App = {
       `;
     }
 
-    if (tab === 'subscribers') {
+    if (tab === "subscribers") {
       const subs = DataStore.getSubscribers();
       return `
         <div class="admin-card-body animate-fade-in-up">
@@ -1990,15 +2310,21 @@ const App = {
                 </tr>
               </thead>
               <tbody id="admin-subscribers-list">
-                ${subs.length === 0 ? '<tr><td colspan="2" class="text-center" style="padding:40px;">No newsletter signups yet.</td></tr>' : 
-                  subs.map(email => `
+                ${
+                  subs.length === 0
+                    ? '<tr><td colspan="2" class="text-center" style="padding:40px;">No newsletter signups yet.</td></tr>'
+                    : subs
+                        .map(
+                          (email) => `
                     <tr>
                       <td style="font-weight:600; color:var(--text-primary);">${email}</td>
                       <td style="text-align:right;">
                         <button class="btn btn-delete btn-sm btn-sub-delete" data-email="${email}"><i class="fa-solid fa-trash-can"></i> Remove</button>
                       </td>
                     </tr>
-                  `).join('')
+                  `,
+                        )
+                        .join("")
                 }
               </tbody>
             </table>
@@ -2007,14 +2333,18 @@ const App = {
       `;
     }
 
-    if (tab === 'messages') {
+    if (tab === "messages") {
       const msgs = DataStore.getContactMessages();
       return `
         <div class="animate-fade-in-up" id="admin-messages-list">
           <h3 style="margin-bottom:25px; font-size:18px;">Inbox Inquiries</h3>
-          ${msgs.length === 0 ? '<div class="admin-card-body text-center" style="padding:60px;">No messages received in mailbox yet.</div>' : 
-            msgs.map(m => `
-              <div class="message-card ${m.replied ? 'replied' : ''}">
+          ${
+            msgs.length === 0
+              ? '<div class="admin-card-body text-center" style="padding:60px;">No messages received in mailbox yet.</div>'
+              : msgs
+                  .map(
+                    (m) => `
+              <div class="message-card ${m.replied ? "replied" : ""}">
                 <div class="message-card-header">
                   <div>
                     <div class="message-sender-name">${m.name}</div>
@@ -2026,19 +2356,21 @@ const App = {
                 <div class="message-body">${m.body}</div>
                 <div class="message-actions">
                   <button class="btn btn-edit btn-sm btn-msg-reply" data-id="${m.id}">
-                    <i class="fa-solid ${m.replied ? 'fa-envelope' : 'fa-envelope-open'}"></i> 
-                    ${m.replied ? 'Mark Unread' : 'Mark Replied'}
+                    <i class="fa-solid ${m.replied ? "fa-envelope" : "fa-envelope-open"}"></i> 
+                    ${m.replied ? "Mark Unread" : "Mark Replied"}
                   </button>
                   <button class="btn btn-delete btn-sm btn-msg-delete" data-id="${m.id}"><i class="fa-solid fa-trash-can"></i> Delete</button>
                 </div>
               </div>
-            `).join('')
+            `,
+                  )
+                  .join("")
           }
         </div>
       `;
     }
 
-    return '';
+    return "";
   },
 
   templatePrivacy() {
@@ -2075,5 +2407,5 @@ const App = {
         </div>
       </section>
     `;
-  }
+  },
 };
