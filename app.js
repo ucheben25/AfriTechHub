@@ -1349,7 +1349,7 @@ const App = {
             <div class="newsletter-content">
               <h3>Join our WhatsApp Alerts</h3>
               <p>Receive rolling grants, developer jobs, and academic scholarships straight to your phone. 5,000+ members already subscribed.</p>
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp mt-2"><i class="fa-brands fa-whatsapp"></i> Join WhatsApp Group</a>
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp mt-2"><i class="fa-brands fa-whatsapp"></i> Join Community</a>
             </div>
             <div class="newsletter-form-container">
               <h4>Get Weekly Email Roundups</h4>
@@ -1482,7 +1482,7 @@ const App = {
             <p>To support real-time alerts, we host an active WhatsApp community with over 5,000+ members. Members receive instant alerts on rolling grants, vacancies, and scholarship openings directly to their phones.</p>
 
             <div class="flex-center mt-4">
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Join our WhatsApp Community</a>
+              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Join Community</a>
             </div>
           </div>
         </div>
