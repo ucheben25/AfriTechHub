@@ -1723,8 +1723,8 @@ ul {
 /* Very small phones */
 @media (max-width: 420px) {
   .container {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
   .brand-name {
     font-size: 16px;
@@ -2940,7 +2940,7 @@ ul {
     font-size: 30px;
   }
   .post-main-content {
-    padding: 20px 16px;
+    padding: 28px 24px;
   }
   .post-title {
     font-size: clamp(1.2rem, 5vw, 1.6rem);
@@ -2996,7 +2996,7 @@ ul {
   }
   /* Post detail full-mobile */
   .post-main-content {
-    padding: 16px 14px;
+    padding: 24px 20px;
     border-radius: var(--border-radius-md);
   }
   .post-meta-details-strip {
@@ -3018,13 +3018,39 @@ ul {
     margin-bottom: 20px;
   }
   .apply-card-box {
-    padding: 16px 14px;
+    padding: 24px 20px;
   }
   .sidebar-widget {
-    padding: 16px 14px;
+    padding: 24px 20px;
   }
   .summary-table {
     font-size: 13px;
+    width: 100%;
+  }
+  .summary-table tr {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .summary-table tr.deadline-row {
+    border-bottom: none;
+  }
+  .summary-table td {
+    padding: 2px 0;
+    width: 100%;
+    text-align: left !important;
+  }
+  .summary-table td:first-child {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .summary-table td:last-child {
+    font-size: 13px;
+    font-weight: 700;
   }
   .post-body-content h3 {
     font-size: 18px;
