@@ -1519,7 +1519,7 @@ const App = {
             ${latestOpps.map((opp) => this.cardTemplate(opp)).join('')}
           </div>
           
-          <div class="flex-center mt-4">
+          <div class="opp-dir-btn-wrap">
             <a href="#opportunities" class="btn btn-outline">See Full Opportunities Directory <i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>

@@ -5317,3 +5317,19 @@ main > div:last-child {
   pointer-events: none;
 }
 
+/* ==========================================================================
+   HOMEPAGE — "See Full Opportunities Directory" button spacing
+   ========================================================================== */
+.opp-dir-btn-wrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-5) 0 var(--space-6);
+  margin-top: var(--space-3);
+}
+
+.opp-dir-btn-wrap .btn {
+  padding: 14px 36px;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.2px;
+}
