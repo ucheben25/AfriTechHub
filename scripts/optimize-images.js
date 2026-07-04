@@ -7,7 +7,7 @@ const outDir = path.resolve(srcDir, "optimized");
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
 // Only process logos and top-level images by default
-const files = [path.join(srcDir, "logos", "logo.jpg")].filter((f) =>
+const files = [path.join(srcDir, "logos", "logo.png")].filter((f) =>
   fs.existsSync(f),
 );
 
