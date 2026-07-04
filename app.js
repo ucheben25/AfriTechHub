@@ -1448,10 +1448,8 @@ const App = {
       <!-- Explore Categories grid (Moved above feed) -->
       <section class="section section-alt">
         <div class="container">
-          <div class="section-header text-center">
-            <span class="subheading">Categories</span>
+          <div class="section-title-block">
             <h2>Explore by Interest</h2>
-            <p>Browse directories sorted by resource classification.</p>
           </div>
           <div class="categories-grid">
             ${categoriesGrid}
@@ -1462,10 +1460,8 @@ const App = {
       <!-- Main Directory Feed Switcher (Moved below categories) -->
       <section class="section">
         <div class="container container-feed">
-          <div class="section-header text-center">
-            <span class="subheading">Active Curations</span>
+          <div class="section-title-block">
             <h2>Recent Opportunities</h2>
-            <p>Explore the latest verified items updated hours ago.</p>
           </div>
 
           <!-- Feed tabs -->
@@ -1525,10 +1521,8 @@ const App = {
     return `
       <section class="section">
         <div class="container container-feed">
-          <div class="section-header text-center">
-            <span class="subheading">Filter Feed</span>
+          <div class="section-title-block">
             <h2>Opportunities Directory</h2>
-            <p>Explore active internships, startup grants, fully-funded scholarships, and developer jobs.</p>
           </div>
 
           <!-- Advanced Tab Switcher -->
@@ -1630,10 +1624,8 @@ const App = {
     return `
       <section class="section">
         <div class="container">
-          <div class="section-header text-center">
-            <span class="subheading">Browse Structures</span>
+          <div class="section-title-block">
             <h2>Opportunity Categories</h2>
-            <p>Discover scholarships, business accelerators, fellowships, and technical roles catalogued for easy discovery.</p>
           </div>
           <div class="categories-grid">
             ${list}
@@ -1645,26 +1637,64 @@ const App = {
 
   templateAbout() {
     return `
+      <!-- About Page Hero Banner -->
+      <section class="page-hero-banner">
+        <div class="container">
+          <h1>About Afri Tech Hub</h1>
+          <p>A zero-barrier, open-access platform connecting African talent to verified global opportunities.</p>
+        </div>
+      </section>
+
+      <!-- Mission Section -->
       <section class="section">
-        <div class="container container-narrow">
-          <div class="section-header text-center">
-            <span class="subheading">Our Identity</span>
-            <h2>About Afri Tech Hub</h2>
-            <p>Bridging the resource gap for African tech talent and entrepreneurs.</p>
-          </div>
-          <div class="about-content-card">
-            <p><strong>Afri Tech Hub</strong> is an open-access platform built to catalog high-impact growth channels for African developers, engineers, and startup founders. We believe that access to careers, grants, fellowships, and quality education should be free and democratized.</p>
-            
-            <p>Unlike traditional job boards, we do not require users to create accounts, fill profiles, or pass login gateways. Afri Tech Hub provides direct access. Every opportunity listed contains a direct button leading to the official application portal of the provider (e.g. Google, Mastercard Foundation, or international startup funds).</p>
+        <div class="container">
+          <div class="about-columns">
+            <div class="about-col-main">
+              <div class="about-block">
+                <div class="about-block-icon"><i class="fa-solid fa-bullseye"></i></div>
+                <div class="about-block-body">
+                  <h3>Our Mission</h3>
+                  <p><strong>Afri Tech Hub</strong> is an open-access platform built to catalog high-impact growth channels for African developers, engineers, and startup founders. We believe that access to careers, grants, fellowships, and quality education should be free and democratized.</p>
+                  <p>Unlike traditional job boards, we do not require users to create accounts, fill profiles, or pass login gateways. Every opportunity listed contains a direct button leading to the official application portal of the provider.</p>
+                </div>
+              </div>
 
-            <h3><i class="fa-solid fa-shield-halved"></i> Verified Sources Only</h3>
-            <p>Every post is curated and verified by our board team from reputable multinational companies, international development organizations, venture capital organizations, and top academic bodies.</p>
+              <div class="about-block">
+                <div class="about-block-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="about-block-body">
+                  <h3>Verified Sources Only</h3>
+                  <p>Every post is curated and verified by our board team from reputable multinational companies, international development organizations, venture capital organizations, and top academic bodies.</p>
+                </div>
+              </div>
 
-            <h3><i class="fa-solid fa-users"></i> Community Outreach</h3>
-            <p>To support real-time alerts, we host an active WhatsApp community with over 5,000+ members. Members receive instant alerts on rolling grants, vacancies, and scholarship openings directly to their phones.</p>
+              <div class="about-block">
+                <div class="about-block-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                <div class="about-block-body">
+                  <h3>Community Outreach</h3>
+                  <p>To support real-time alerts, we host an active WhatsApp community with over 5,000+ members receiving instant alerts on rolling grants, vacancies, and scholarship openings directly to their phones.</p>
+                  <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp mt-2"><i class="fa-brands fa-whatsapp"></i> Join Community</a>
+                </div>
+              </div>
+            </div>
 
-            <div class="flex-center mt-4">
-              <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Join Community</a>
+            <div class="about-col-aside">
+              <div class="about-stats-card">
+                <h4>Platform Highlights</h4>
+                <ul class="about-stats-list">
+                  <li><i class="fa-solid fa-check-circle"></i> 100% Free — No login, no registration</li>
+                  <li><i class="fa-solid fa-check-circle"></i> Verified listings from trusted sources</li>
+                  <li><i class="fa-solid fa-check-circle"></i> 5,000+ WhatsApp community members</li>
+                  <li><i class="fa-solid fa-check-circle"></i> Jobs, Grants, Scholarships & Internships</li>
+                  <li><i class="fa-solid fa-check-circle"></i> Weekly email roundups available</li>
+                  <li><i class="fa-solid fa-check-circle"></i> Active across 54 African countries</li>
+                </ul>
+              </div>
+              <div class="about-contact-card">
+                <h4>Contact Us</h4>
+                <p><i class="fa-solid fa-envelope"></i> info@afritechhub.org</p>
+                <p><i class="fa-solid fa-phone"></i> +234 915 970 1354</p>
+                <a href="#contact" class="btn btn-outline btn-sm" style="margin-top:12px;">Send a Message</a>
+              </div>
             </div>
           </div>
         </div>
@@ -1674,16 +1704,19 @@ const App = {
 
   templateFAQ() {
     return `
+      <!-- FAQ Page Hero Banner -->
+      <section class="page-hero-banner">
+        <div class="container">
+          <h1>Frequently Asked Questions</h1>
+          <p>Everything you need to know about using Afri Tech Hub.</p>
+        </div>
+      </section>
+
       <section class="section">
         <div class="container container-narrow">
-          <div class="section-header text-center">
-            <span class="subheading">Help Center</span>
-            <h2>FAQs</h2>
-            <p>Find answers to common questions about Afri Tech Hub.</p>
-          </div>
-
           <div class="faq-search-wrapper">
-            <input type="text" id="faq-search" class="admin-form-control faq-search-input" placeholder="Search FAQ topics...">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="faq-search" class="admin-form-control faq-search-input" placeholder="Search questions...">
           </div>
 
           <div class="faq-list" id="faq-results">
@@ -1710,31 +1743,49 @@ const App = {
 
   templateContact() {
     return `
+      <!-- Contact Page Hero Banner -->
+      <section class="page-hero-banner">
+        <div class="container">
+          <h1>Contact Us</h1>
+          <p>Reach out to submit vacancy lists, partnership proposals, or report listing anomalies.</p>
+        </div>
+      </section>
+
       <section class="section">
         <div class="container container-narrow">
-          <div class="section-header text-center">
-            <span class="subheading">Get in Touch</span>
-            <h2>Contact Afri Tech Hub</h2>
-            <p>Reach out to submit vacancy lists, partnership proposals, or report listing anomalies.</p>
-          </div>
-
           <div class="contact-grid">
             <!-- Contact Card Details -->
             <div class="contact-info-card">
-              <h3>Contact Details</h3>
-              <div class="footer-contact-item">
-                <i class="fa-solid fa-location-dot"></i>
-                <span>Victoria Island, Lagos, Nigeria</span>
+              <h3>Get in Touch</h3>
+              <div class="contact-detail-row">
+                <div class="contact-detail-icon"><i class="fa-solid fa-location-dot"></i></div>
+                <div>
+                  <span class="contact-detail-label">Address</span>
+                  <span class="contact-detail-value">Victoria Island, Lagos, Nigeria</span>
+                </div>
               </div>
-              <div class="footer-contact-item">
-                <i class="fa-solid fa-envelope"></i>
-                <span>info@afritechhub.org</span>
+              <div class="contact-detail-row">
+                <div class="contact-detail-icon"><i class="fa-solid fa-envelope"></i></div>
+                <div>
+                  <span class="contact-detail-label">Email</span>
+                  <span class="contact-detail-value">info@afritechhub.org</span>
+                </div>
               </div>
-              <div class="footer-contact-item">
-                <i class="fa-solid fa-phone"></i>
-                <span>+2349159701354</span>
+              <div class="contact-detail-row">
+                <div class="contact-detail-icon"><i class="fa-solid fa-phone"></i></div>
+                <div>
+                  <span class="contact-detail-label">Phone</span>
+                  <span class="contact-detail-value">+234 915 970 1354</span>
+                </div>
               </div>
-              <div class="social-links">
+              <div class="contact-detail-row">
+                <div class="contact-detail-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                <div>
+                  <span class="contact-detail-label">WhatsApp Community</span>
+                  <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="contact-detail-value contact-detail-link">Join 5,000+ Members</a>
+                </div>
+              </div>
+              <div class="social-links" style="margin-top: var(--space-3);">
                 <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
                 <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
                 <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
@@ -1743,6 +1794,7 @@ const App = {
 
             <!-- Form -->
             <div class="contact-form-card">
+              <h3>Send a Message</h3>
               <form id="contact-form">
                 <div class="admin-form-group">
                   <label class="form-label" for="contact-name">Full Name *</label>
