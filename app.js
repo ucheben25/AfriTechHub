@@ -100,10 +100,12 @@ const App = {
     // Scroll events: scroll-to-top visibility and progress calculation
     window.addEventListener("scroll", () => {
       // Scroll to Top visibility toggle
-      if (window.scrollY > 300) {
-        this.nodes.scrollTopBtn.classList.add("visible");
-      } else {
-        this.nodes.scrollTopBtn.classList.remove("visible");
+      if (this.nodes.scrollTopBtn) {
+        if (window.scrollY > 300) {
+          this.nodes.scrollTopBtn.classList.add("visible");
+        } else {
+          this.nodes.scrollTopBtn.classList.remove("visible");
+        }
       }
 
       // Progress bar calculation
@@ -119,9 +121,11 @@ const App = {
     });
 
     // Scroll to Top action
-    this.nodes.scrollTopBtn.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    if (this.nodes.scrollTopBtn) {
+      this.nodes.scrollTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
   },
 
   // --- Theme Management ---
@@ -1441,7 +1445,21 @@ const App = {
         </div>
       </section>
 
-      <!-- Main Directory Feed Switcher -->
+      <!-- Explore Categories grid (Moved above feed) -->
+      <section class="section section-alt">
+        <div class="container">
+          <div class="section-header text-center">
+            <span class="subheading">Categories</span>
+            <h2>Explore by Interest</h2>
+            <p>Browse directories sorted by resource classification.</p>
+          </div>
+          <div class="categories-grid">
+            ${categoriesGrid}
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Directory Feed Switcher (Moved below categories) -->
       <section class="section">
         <div class="container container-feed">
           <div class="section-header text-center">
@@ -1471,21 +1489,7 @@ const App = {
         </div>
       </section>
 
-      <!-- Explore Categories grid -->
-      <section class="section section-alt">
-        <div class="container">
-          <div class="section-header text-center">
-            <span class="subheading">Categories</span>
-            <h2>Explore by Interest</h2>
-            <p>Browse directories sorted by resource classification.</p>
-          </div>
-          <div class="categories-grid">
-            ${categoriesGrid}
-          </div>
-        </div>
-      </section>
-
-      <!-- Community Alert Outreach -->
+      <!-- Community Alert Outreach (WhatsApp alerts + Email Newsletter) -->
       <section class="section">
         <div class="container container-narrow">
           <div class="newsletter-card animate-fade-in-up">
@@ -2477,13 +2481,44 @@ const App = {
       <section class="reading-section">
         <div class="reading-container">
           <h1>Privacy Policy</h1>
-          <div class="reading-meta">Last updated: June 28, 2026</div>
+          <div class="reading-meta">Last updated: July 4, 2026</div>
           <div class="reading-content">
-            <p>Afri Tech Hub operates an open-access platform. We do not require visitors to register, sign up, or login to use our directory. Thus, we do not collect personal profiles, browser habits, or tracking logs.</p>
-            <h3>Information We Collect</h3>
-            <p>We only collect name, email address, and message bodies explicitly submitted through our Contact Form or Newsletter Signup box. This data is strictly used to address support inquiries and send weekly opportunity roundups.</p>
-            <h3>Third-Party Links</h3>
-            <p>Our platform indexes external links leading to official application portals. We do not control and are not liable for the privacy policies of external sites. We advise checking their terms before applying.</p>
+            <p>At Afri Tech Hub, we value the trust you place in us. This Privacy Policy details how we collect, use, and safeguard any information when you visit and interact with our open-access portal.</p>
+            
+            <h2>1. Our Open-Access Principle</h2>
+            <p>Afri Tech Hub is built as a zero-barrier, open-access opportunities portal. We do not require account registration, login credentials, or profiles to browse our directories. Consequently, we do not track your browsing history or maintain personal profiles.</p>
+            
+            <h2>2. Information We Collect</h2>
+            <p>We only receive information that you voluntarily submit to us. This occurs in the following ways:</p>
+            <ul>
+              <li><strong>Contact Inquiry:</strong> If you use our Contact Form, we collect your full name, email address, and the content of your message to address your inquiry.</li>
+              <li><strong>Newsletter Subscription:</strong> If you subscribe to our Weekly Email Roundups, we collect your email address solely to send you verified opportunity listings.</li>
+            </ul>
+            
+            <h2>3. How We Use Your Information</h2>
+            <p>Your information is used strictly for its intended purpose:</p>
+            <ul>
+              <li>To respond to comments, questions, or issues sent through the contact form.</li>
+              <li>To deliver the weekly newsletters with the latest opportunities.</li>
+              <li>To monitor and maintain system security and prevent spam.</li>
+            </ul>
+            <p>We will never sell, lease, distribute, or share your email address or personal details with third-party advertisers or sponsors.</p>
+            
+            <h2>4. Cookies & Web Tracking</h2>
+            <p>We may use basic cookies or local storage settings (such as saving your preferred Dark Mode toggle) to improve your visual experience. These configurations do not contain personal identifier details and are not uploaded to our servers.</p>
+            
+            <h2>5. External Application Portals</h2>
+            <p>Our service indexes and curates external vacancies, grants, and scholarships. Clicking "Apply" redirects you to the official registration portals of external organizations (e.g. Google, Mastercard Foundation). Afri Tech Hub does not manage these external sites and is not liable for their privacy practices. We recommend reading their respective privacy policies before applying.</p>
+            
+            <h2>6. Data Security</h2>
+            <p>We implement appropriate physical, technical, and administrative security measures to protect your submitted contact form entries and newsletter subscribers database from unauthorized access, alteration, or disclosure.</p>
+            
+            <h2>7. Opt-Out & Deletion Rights</h2>
+            <p>You can opt-out of our newsletter at any time by clicking the "Unsubscribe" link at the bottom of our emails, or by contacting us directly to request that your email address and message entries be deleted from our systems.</p>
+            
+            <h2>8. Contact Us</h2>
+            <p>If you have any questions regarding this Privacy Policy or how we handle your data, please contact us at:</p>
+            <p><strong>Email:</strong> info@afritechhub.org<br><strong>Phone:</strong> +234 915 970 1354</p>
           </div>
         </div>
       </section>

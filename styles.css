@@ -1236,6 +1236,26 @@ ul {
   animation: pulseGlow 2s infinite;
 }
 
+.scroll-top-btn {
+  background-color: var(--color-secondary);
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px) scale(0.8);
+  transition: all var(--transition-normal);
+}
+
+.scroll-top-btn.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.scroll-top-btn:hover {
+  background-color: var(--color-secondary-hover);
+}
+
 .floating-add-post {
   background: linear-gradient(135deg, var(--color-accent), #f59e0b);
 }
@@ -4523,4 +4543,15 @@ textarea.admin-form-control {
   .directory-tab {
     padding: 8px 16px;
   }
+}
+
+/* --- High-contrast style overrides for the Newsletter & WhatsApp Alerts card --- */
+.newsletter-card,
+.newsletter-card h3,
+.newsletter-card h4,
+.newsletter-card p,
+.newsletter-card span,
+.newsletter-card .muted,
+.newsletter-card p.muted {
+  color: #ffffff !important;
 }
