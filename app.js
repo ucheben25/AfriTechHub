@@ -35,6 +35,9 @@ const App = {
   },
 
   init() {
+    // Show branded splash screen first
+    this.initSplash();
+
     // Load database and categories
     this.refreshState();
 
@@ -46,6 +49,43 @@ const App = {
 
     // Trigger Initial Routing
     this.router();
+  },
+
+  initSplash() {
+    const splash = document.getElementById('splash-screen');
+    const fill   = document.getElementById('splash-progress-fill');
+    const skipBtn = document.getElementById('splash-skip-btn');
+    if (!splash) return;
+
+    const DURATION = 15000; // 15 seconds
+    const startTime = performance.now();
+    let rafId;
+
+    const dismiss = () => {
+      cancelAnimationFrame(rafId);
+      splash.classList.add('splash-exit');
+      // Remove from DOM after the CSS fade-out (600ms)
+      setTimeout(() => splash.remove(), 650);
+    };
+
+    // Animate progress bar frame-by-frame
+    const tick = (now) => {
+      const elapsed = now - startTime;
+      const pct = Math.min((elapsed / DURATION) * 100, 100);
+      if (fill) fill.style.width = pct + '%';
+      if (elapsed >= DURATION) {
+        dismiss();
+      } else {
+        rafId = requestAnimationFrame(tick);
+      }
+    };
+    rafId = requestAnimationFrame(tick);
+
+    // Skip button
+    if (skipBtn) skipBtn.addEventListener('click', dismiss, { once: true });
+
+    // Also allow any key press to skip
+    document.addEventListener('keydown', dismiss, { once: true });
   },
 
   refreshState() {
@@ -1747,79 +1787,136 @@ const App = {
       <section class="page-hero-banner">
         <div class="container">
           <h1>Contact Us</h1>
-          <p>Reach out to submit vacancy lists, partnership proposals, or report listing anomalies.</p>
+          <p>We respond within 24 hours. Reach out for partnerships, listing submissions, or platform enquiries.</p>
         </div>
       </section>
 
-      <section class="section">
-        <div class="container container-narrow">
-          <div class="contact-grid">
-            <!-- Contact Card Details -->
-            <div class="contact-info-card">
-              <h3>Get in Touch</h3>
-              <div class="contact-detail-row">
-                <div class="contact-detail-icon"><i class="fa-solid fa-location-dot"></i></div>
-                <div>
-                  <span class="contact-detail-label">Address</span>
-                  <span class="contact-detail-value">Victoria Island, Lagos, Nigeria</span>
-                </div>
+      <!-- Quick Contact Chips -->
+      <section class="contact-chips-section">
+        <div class="container">
+          <div class="contact-chips-grid">
+            <a href="mailto:info@afritechhub.org" class="contact-chip">
+              <div class="contact-chip-icon"><i class="fa-solid fa-envelope"></i></div>
+              <div class="contact-chip-body">
+                <span class="contact-chip-label">Email Us</span>
+                <span class="contact-chip-value">info@afritechhub.org</span>
               </div>
-              <div class="contact-detail-row">
-                <div class="contact-detail-icon"><i class="fa-solid fa-envelope"></i></div>
-                <div>
-                  <span class="contact-detail-label">Email</span>
-                  <span class="contact-detail-value">info@afritechhub.org</span>
-                </div>
+            </a>
+            <a href="tel:+2349159701354" class="contact-chip">
+              <div class="contact-chip-icon phone"><i class="fa-solid fa-phone"></i></div>
+              <div class="contact-chip-body">
+                <span class="contact-chip-label">Call Us</span>
+                <span class="contact-chip-value">+234 915 970 1354</span>
               </div>
-              <div class="contact-detail-row">
-                <div class="contact-detail-icon"><i class="fa-solid fa-phone"></i></div>
-                <div>
-                  <span class="contact-detail-label">Phone</span>
-                  <span class="contact-detail-value">+234 915 970 1354</span>
-                </div>
+            </a>
+            <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="contact-chip">
+              <div class="contact-chip-icon whatsapp"><i class="fa-brands fa-whatsapp"></i></div>
+              <div class="contact-chip-body">
+                <span class="contact-chip-label">WhatsApp Community</span>
+                <span class="contact-chip-value">Join 5,000+ Members</span>
               </div>
-              <div class="contact-detail-row">
-                <div class="contact-detail-icon"><i class="fa-brands fa-whatsapp"></i></div>
-                <div>
-                  <span class="contact-detail-label">WhatsApp Community</span>
-                  <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="contact-detail-value contact-detail-link">Join 5,000+ Members</a>
-                </div>
+            </a>
+            <div class="contact-chip no-link">
+              <div class="contact-chip-icon location"><i class="fa-solid fa-location-dot"></i></div>
+              <div class="contact-chip-body">
+                <span class="contact-chip-label">Our Office</span>
+                <span class="contact-chip-value">Victoria Island, Lagos, NG</span>
               </div>
-              <div class="social-links" style="margin-top: var(--space-3);">
-                <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-                <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-                <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Contact Grid -->
+      <section class="section contact-main-section">
+        <div class="container">
+          <div class="contact-advanced-grid">
+
+            <!-- LEFT: Info Panel -->
+            <div class="contact-panel-left">
+              <div class="contact-panel-header">
+                <h2>Let's Talk</h2>
+                <p>Whether you're submitting a vacancy, proposing a partnership, or have a question about the platform — we are available.</p>
+              </div>
+
+              <div class="contact-office-hours">
+                <h4><i class="fa-solid fa-clock"></i> Response Times</h4>
+                <ul>
+                  <li><span>General Enquiries</span><strong>Within 24 hrs</strong></li>
+                  <li><span>Listing Submissions</span><strong>Within 48 hrs</strong></li>
+                  <li><span>Partnership Proposals</span><strong>Within 72 hrs</strong></li>
+                </ul>
+              </div>
+
+              <div class="contact-panel-socials">
+                <h4>Follow Us</h4>
+                <div class="social-links">
+                  <a href="https://twitter.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                  <a href="https://linkedin.com/company/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                  <a href="https://www.facebook.com/afritechub/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                  <a href="https://instagram.com/afritechhub" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
               </div>
             </div>
 
-            <!-- Form -->
-            <div class="contact-form-card">
-              <h3>Send a Message</h3>
-              <form id="contact-form">
-                <div class="admin-form-group">
-                  <label class="form-label" for="contact-name">Full Name *</label>
-                  <input type="text" id="contact-name" class="admin-form-control" placeholder="John Doe" required>
-                </div>
-                <div class="admin-form-group">
-                  <label class="form-label" for="contact-email">Email Address *</label>
-                  <input type="email" id="contact-email" class="admin-form-control" placeholder="john@example.com" required>
-                </div>
-                <div class="admin-form-group">
-                  <label class="form-label" for="contact-subject">Subject *</label>
-                  <input type="text" id="contact-subject" class="admin-form-control" placeholder="Opportunity Listing, Partnership..." required>
-                </div>
-                <div class="admin-form-group">
-                  <label class="form-label" for="contact-message">Message *</label>
-                  <textarea id="contact-message" class="admin-form-control" rows="5" placeholder="Explain your message in detail..." required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary btn-submit">Submit Inquiry <i class="fa-solid fa-paper-plane"></i></button>
-              </form>
+            <!-- RIGHT: Form Panel -->
+            <div class="contact-panel-right">
+              <div class="contact-form-card">
+                <h3>Send a Message</h3>
+                <form id="contact-form">
+                  <div class="contact-form-row">
+                    <div class="admin-form-group">
+                      <label class="form-label" for="contact-name">Full Name *</label>
+                      <input type="text" id="contact-name" class="admin-form-control" placeholder="John Doe" required>
+                    </div>
+                    <div class="admin-form-group">
+                      <label class="form-label" for="contact-email">Email Address *</label>
+                      <input type="email" id="contact-email" class="admin-form-control" placeholder="john@example.com" required>
+                    </div>
+                  </div>
+                  <div class="admin-form-group">
+                    <label class="form-label" for="contact-subject">Subject *</label>
+                    <select id="contact-subject" class="admin-form-control" required>
+                      <option value="" disabled selected>Select an enquiry type...</option>
+                      <option value="listing">Submit a Vacancy / Listing</option>
+                      <option value="partnership">Partnership Proposal</option>
+                      <option value="report">Report a Listing Issue</option>
+                      <option value="media">Media & Press Enquiry</option>
+                      <option value="other">General Enquiry</option>
+                    </select>
+                  </div>
+                  <div class="admin-form-group">
+                    <label class="form-label" for="contact-message">Your Message *</label>
+                    <textarea id="contact-message" class="admin-form-control" rows="6" placeholder="Describe your enquiry in detail..." required></textarea>
+                  </div>
+                  <div class="contact-form-footer">
+                    <p class="contact-form-note"><i class="fa-solid fa-shield-halved"></i> Your information is kept private and never shared.</p>
+                    <button type="submit" class="btn btn-primary btn-submit">Send Message <i class="fa-solid fa-paper-plane"></i></button>
+                  </div>
+                </form>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom CTA Strip -->
+      <section class="contact-cta-strip">
+        <div class="container">
+          <div class="contact-cta-inner">
+            <div class="contact-cta-text">
+              <h3>Need instant answers?</h3>
+              <p>Join our WhatsApp community for real-time updates on new listings, grants, and opportunities.</p>
+            </div>
+            <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
+              <i class="fa-brands fa-whatsapp"></i> Join Community
+            </a>
           </div>
         </div>
       </section>
     `;
   },
+
 
   templateSinglePost(postId) {
     const opp = DataStore.getOpportunities(true).find((o) => o.id === postId);

@@ -4857,9 +4857,463 @@ textarea.admin-form-control {
 }
 
 .faq-search-wrapper .faq-search-input {
-  padding-left: 48px;
+  padding-left: 60px;
   height: 52px;
   font-size: var(--font-size-body);
 }
 
+/* ==========================================================================
+   PRE-FOOTER SPACING — last section before footer gets extra bottom padding
+   ========================================================================== */
+main > section:last-child,
+main > div:last-child {
+  padding-bottom: var(--space-8);
+}
+
+/* ==========================================================================
+   CONTACT PAGE — Advanced Redesign
+   ========================================================================== */
+
+/* --- Quick Contact Chips Strip --- */
+.contact-chips-section {
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-4) 0;
+}
+
+.contact-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+
+.contact-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal), border-color var(--transition-normal);
+  cursor: pointer;
+}
+
+.contact-chip:hover:not(.no-link) {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.contact-chip-icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.contact-chip-icon.phone {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.contact-chip-icon.whatsapp {
+  background-color: rgba(37, 211, 102, 0.12);
+  color: #25d366;
+}
+
+.contact-chip-icon.location {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.contact-chip-label {
+  display: block;
+  font-size: var(--font-size-caption);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.contact-chip-value {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 900px) {
+  .contact-chips-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .contact-chips-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Advanced Contact Grid --- */
+.contact-main-section {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+.contact-advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* --- Left Info Panel --- */
+.contact-panel-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  position: sticky;
+  top: 100px;
+}
+
+.contact-panel-header h2 {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  line-height: 1.2;
+}
+
+.contact-panel-header p {
+  color: var(--text-secondary);
+  line-height: 1.75;
+  font-size: var(--font-size-body);
+}
+
+.contact-office-hours {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-4);
+}
+
+.contact-office-hours h4 {
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-office-hours h4 i {
+  color: var(--color-primary);
+}
+
+.contact-office-hours ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.contact-office-hours li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-small);
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.contact-office-hours li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.contact-office-hours li span {
+  color: var(--text-secondary);
+}
+
+.contact-office-hours li strong {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-primary-light);
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+}
+
+.contact-panel-socials h4 {
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-2);
+}
+
+/* --- Right Form Panel --- */
+.contact-panel-right {
+  min-width: 0;
+}
+
+.contact-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.contact-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.contact-form-note {
+  font-size: var(--font-size-caption);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contact-form-note i {
+  color: var(--color-primary);
+}
+
+@media (max-width: 900px) {
+  .contact-advanced-grid {
+    grid-template-columns: 1fr;
+  }
+  .contact-panel-left {
+    position: static;
+  }
+  .contact-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Bottom CTA Strip --- */
+.contact-cta-strip {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  padding: var(--space-6) 0;
+}
+
+.contact-cta-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.contact-cta-text h3 {
+  font-size: 1.4rem;
+  font-weight: var(--font-weight-bold);
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.contact-cta-text p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--font-size-small);
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .contact-cta-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .contact-cta-text p {
+    max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   SPLASH SCREEN — Full-page branded intro animation
+   ========================================================================== */
+@keyframes splash-logo-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes splash-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes splash-text-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splash-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb, 34, 197, 94), 0.5); }
+  70%  { box-shadow: 0 0 0 28px rgba(var(--color-primary-rgb, 34, 197, 94), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb, 34, 197, 94), 0); }
+}
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: linear-gradient(145deg, #0a0f1e 0%, #0d1f30 50%, #071a14 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+  overflow: hidden;
+}
+
+/* Decorative background orbs */
+.splash-screen::before,
+.splash-screen::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.splash-screen::before {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.18) 0%, transparent 70%);
+  top: -80px;
+  right: -80px;
+}
+
+.splash-screen::after {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, transparent 70%);
+  bottom: -60px;
+  left: -60px;
+}
+
+.splash-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 0 var(--space-4);
+}
+
+.splash-logo-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: splash-logo-in 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.splash-logo-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #22c55e;
+  border-right-color: rgba(34, 197, 94, 0.3);
+  animation: splash-ring-spin 1.4s linear infinite;
+}
+
+.splash-logo-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  animation: splash-pulse-ring 2.2s ease-out 1s infinite;
+}
+
+.splash-brand {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  margin: 0;
+  animation: splash-text-in 0.7s ease 0.5s both;
+}
+
+.splash-tagline {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  letter-spacing: 0.3px;
+  animation: splash-text-in 0.7s ease 0.75s both;
+}
+
+.splash-progress-track {
+  width: 220px;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin-top: var(--space-2);
+  animation: splash-text-in 0.7s ease 1s both;
+}
+
+.splash-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #22c55e, #3b82f6);
+  transition: width 0.1s linear;
+}
+
+.splash-skip-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.55);
+  padding: 7px 20px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  animation: splash-text-in 0.7s ease 1.2s both;
+  margin-top: var(--space-1);
+}
+
+.splash-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Exit animation */
+.splash-screen.splash-exit {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 
