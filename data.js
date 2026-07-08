@@ -16,7 +16,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Monthly stipend of USD 3,000","Free accommodation throughout the fellowship","Mentorship from leading researchers and academics"],
     skills: ["Leadership","Problem Solving"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-pibbss-winter-fellowship-program-2026-2027-in-south-africa-3000-monthly-stipend-free-accommodation-flights-and-mentorship/",
+    applyUrl: "https://princint.ai/programs/fellowship/",
     featured: true,
     trending: true,
     status: "published"
@@ -38,7 +38,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Be a Diana Award Recipient","Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Pitching","Business Development","Financial Strategy"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-agfund-development-programme-2026-for-diana-award-recipients-in-africa/",
+    applyUrl: "https://diana-award.org.uk/our-programmes-and-initiatives/award-and-development/development-opportunities",
     featured: true,
     trending: true,
     status: "published"
@@ -60,7 +60,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["African Women Impact Fund launches with USD$60&hellip;","Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Leadership","Problem Solving"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-undp-african-youth-co-creators-council-2026/",
+    applyUrl: "https://www.undp.org/africa/blog/call-applications-african-youth-co-creators-council",
     featured: true,
     trending: true,
     status: "published"
@@ -82,7 +82,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Position their fashion brands to attract investors and secure funding","Fully funded participation at no cost","One-on-one mentorship from experienced industry professionals","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Leadership","Problem Solving"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-african-fashion-fundlab-fellowship-2026-fully-funded-business-development-program-for-fashion-entrepreneurs/",
+    applyUrl: "https://docs.google.com/forms/d/e/1FAIpQLScs41USLSx5ersIcpvSUkTjXmaComOnVRmEaHYCRzJa72e6sw/viewform",
     featured: true,
     trending: false,
     status: "published"
@@ -104,7 +104,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Professional mentorship from industry experts","International Breweries’ Kickstart Initiative Awards&hellip;"],
     skills: ["Leadership","Problem Solving"],
     experienceLevel: "Undergraduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-dangote-cement-undergraduate-engineering-research-competition-2026-up-to-%e2%82%a61-5-million/",
+    applyUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfugF-KnVn7qHRuXgsXpf1axFZ7iNAwto0LgwZRbxKaqjvjIg/viewform",
     featured: true,
     trending: false,
     status: "published"
@@ -126,7 +126,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Opportunity to receive up to USD 10,000 in equity-free grant funding (awarded to the top finalists)","Expert mentorship and one-on-one coaching","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Digital Literacy","Tech Integration","Critical Thinking"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-standard-chartered-foundation-women-in-tech-accelerator-kenya-cohort-9-up-to-10000-equity-free-grant/",
+    applyUrl: "https://www.womenintech.ke/#/cohort-9",
     featured: false,
     trending: false,
     status: "published"
@@ -148,7 +148,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Opportunity to win a share of ₦200 million in cash prizes and funding","Mentorship from leading professionals in banking, fintech, and technology","Be willing to share relevant business data for mentorship purposes","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Pitching","Business Development","Financial Strategy"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-wema-bank-hackathon-hackaholics-program-for-nigerians-up-to-%e2%82%a6200m-prizes/",
+    applyUrl: "https://hackaholics.wemabank.com/",
     featured: false,
     trending: false,
     status: "published"
@@ -170,7 +170,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Digital Literacy","Tech Integration","Critical Thinking"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-deloitte-academys-cyber-security-programme-2026/",
+    applyUrl: "https://jobs.smartrecruiters.com/Deloitte6/744000135299304-deloitte-cyber-academy",
     featured: false,
     trending: false,
     status: "published"
@@ -192,7 +192,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to a partnership network offering over US$1.5 million in startup credits","Preparation for larger funding rounds.","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Pitching","Business Development","Financial Strategy"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-botswana-tech-fund-2026-for-southern-africa-businesses/",
+    applyUrl: "https://botswanatech.com/",
     featured: false,
     trending: false,
     status: "published"
@@ -214,7 +214,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["One-on-one mentorship from industry experts and experienced founders","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Digital Literacy","Tech Integration","Critical Thinking"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-timbuktoo-minetech-startup-incubation-programme-2026-for-african-startups/",
+    applyUrl: "https://www.undp.org/zambia/timbuktoo-minetech-hub",
     featured: false,
     trending: false,
     status: "published"
@@ -236,7 +236,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Funding of up to 70% of eligible costs for SMEs","Funding of up to 50% of eligible costs for large enterprises"],
     skills: ["Leadership","Problem Solving"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-business-partnerships-programme-in-developing-countries-2026-up-to-e300000-per-project/",
+    applyUrl: "https://cpva.lt/en/calls-for-proposals/2026-m-development-cooperation-and-humanitarian-aid-fund-2026-call-for-applications-under-the-business-partnerships-programme-in-developing-countries-k2",
     featured: false,
     trending: false,
     status: "published"
@@ -258,7 +258,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Mentorship from experienced entrepreneurs and industry experts","How African Startups Can Secure Funding in Tough Markets","International Breweries’ Kickstart Initiative Awards&hellip;"],
     skills: ["Pitching","Business Development","Financial Strategy"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-edo-youth-impact-forum-eyif-2-0-grant-program-2026-win-up-to-%e2%82%a610-million-in-startup-grants/",
+    applyUrl: "https://www.edoyouthimpactforum.com/grant-registration",
     featured: false,
     trending: false,
     status: "published"
@@ -280,7 +280,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Competitive stipend","Mentorship from experienced professionals"],
     skills: ["Technical Skills","Collaboration","Project Management"],
     experienceLevel: "Internship",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-nestle-internships-and-apprenticeships-2026-paid-global-opportunities/",
+    applyUrl: "https://www.nestle.com/jobs/search-jobs?keyword=Internship+&country=&location=&career_area=All",
     featured: false,
     trending: false,
     status: "published"
@@ -302,7 +302,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Technical Skills","Collaboration","Project Management"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-fg-power-force-program-2026-free-technical-training-employment-opportunity-for-5000-nigerian-youths/",
+    applyUrl: "https://pmi.naptin.gov.ng/",
     featured: false,
     trending: false,
     status: "published"
@@ -324,7 +324,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["How African Startups Can Secure Funding in Tough Markets","Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Digital Literacy","Tech Integration","Critical Thinking"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-transforming-african-medtech-conference-tamc-2026-for-medical-device-hardware-technology-across-africa/",
+    applyUrl: "https://www.africanmedtech.com/",
     featured: false,
     trending: false,
     status: "published"
@@ -346,7 +346,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Digital Literacy","Tech Integration","Critical Thinking"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-digital-skills-development-programme-for-young-girls-women-and-persons-with-disabilities-cohort-ii/",
+    applyUrl: "https://wepnigeria.net/call2726/",
     featured: false,
     trending: false,
     status: "published"
@@ -368,7 +368,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Technical Skills","Collaboration","Project Management"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-nde-renewed-hope-employment-initiative-rhei-phase-3-to-train-over-21000-nigerians/",
+    applyUrl: "https://nderegistrationportal.ng/",
     featured: false,
     trending: false,
     status: "published"
@@ -390,7 +390,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to a cash prize pool","USD 25,000 in AWS cloud credits for each selected startup","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Pitching","Business Development","Financial Strategy"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-afts-alpha-expo-micro-accelerator-pitch-competition-2026-for-early-stage-fintech-and-adjacent-startups-in-africa/",
+    applyUrl: "https://africafintechsummit.us16.list-manage.com/",
     featured: false,
     trending: false,
     status: "published"
@@ -412,7 +412,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Hands-on technical mentorship from Google Research and Google engineering teams","Mentorship from leading venture capital firms","How African Startups Can Secure Funding in Tough Markets"],
     skills: ["Digital Literacy","Tech Integration","Critical Thinking"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-google-africa-applied-ai-lab-program-2026-for-african-ai-entrepreneurs-and-researchers/",
+    applyUrl: "https://labs.google/aifuturesfund/africaailab",
     featured: false,
     trending: false,
     status: "published"
@@ -434,7 +434,7 @@ const DEFAULT_OPPORTUNITIES = [
     benefits: ["Access to world-class mentorship and business coaching.","Opportunity to network with peers and global industry experts.","Financial support, stipend, or equity-free grants (where applicable)."],
     skills: ["Leadership","Problem Solving"],
     experienceLevel: "Graduate",
-    applyUrl: "https://msmeafricaonline.com/call-for-applications-paravet-nigeria-community-animal-health-network/",
+    applyUrl: "https://forms.gle/UegKHWvJ7FuUUNt38",
     featured: false,
     trending: false,
     status: "published"
