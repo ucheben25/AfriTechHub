@@ -685,6 +685,11 @@ const App = {
 
         if (name && email && subject && body) {
           DataStore.addContactMessage({ name, email, subject, body });
+          
+          // Form submission is also sent via mailto
+          const mailtoUri = `mailto:hubafritech@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${body}`)}`;
+          window.location.href = mailtoUri;
+
           this.showToast(
             "Your message has been submitted. We will review and respond shortly!",
             "success",
@@ -716,7 +721,7 @@ const App = {
         const pass = document.getElementById("admin-password").value.trim();
 
         // Standard auth validation credentials
-        if (user === "admin" && pass === "adminpassword") {
+        if ((user === "admin" && pass === "adminpassword") || (user === "ugo" && pass === "ugo@afritech")) {
           sessionStorage.setItem("ath_admin_logged_in", "true");
           this.state.activeDashboardTab = "overview";
           window.location.hash = "#admin-dashboard";
@@ -860,14 +865,11 @@ const App = {
           document.getElementById("adm-opp-featured").checked =
             opp.featured || false;
 
-          if (
-            opp.image &&
-            !opp.image.startsWith("https://images.unsplash.com")
-          ) {
+          if (opp.image) {
             filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
-          } else if (opp.image) {
-            textUrlInput.value = opp.image;
-            filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
+            if (opp.image.startsWith("http")) {
+              textUrlInput.value = opp.image;
+            }
           }
 
           if (opp.skills) {
@@ -1731,7 +1733,7 @@ const App = {
               </div>
               <div class="about-contact-card">
                 <h4>Contact Us</h4>
-                <p><i class="fa-solid fa-envelope"></i> info@afritechhub.org</p>
+                <p><i class="fa-solid fa-envelope"></i> hubafritech@gmail.com</p>
                 <p><i class="fa-solid fa-phone"></i> +234 915 970 1354</p>
                 <a href="#contact" class="btn btn-outline btn-sm" style="margin-top:12px;">Send a Message</a>
               </div>
@@ -1795,11 +1797,11 @@ const App = {
       <section class="contact-chips-section">
         <div class="container">
           <div class="contact-chips-grid">
-            <a href="mailto:info@afritechhub.org" class="contact-chip">
+            <a href="mailto:hubafritech@gmail.com" class="contact-chip">
               <div class="contact-chip-icon"><i class="fa-solid fa-envelope"></i></div>
               <div class="contact-chip-body">
                 <span class="contact-chip-label">Email Us</span>
-                <span class="contact-chip-value">info@afritechhub.org</span>
+                <span class="contact-chip-value">hubafritech@gmail.com</span>
               </div>
             </a>
             <a href="tel:+2349159701354" class="contact-chip">
@@ -2667,7 +2669,7 @@ const App = {
             
             <h2>8. Contact Us</h2>
             <p>If you have any questions regarding this Privacy Policy or how we handle your data, please contact us at:</p>
-            <p><strong>Email:</strong> info@afritechhub.org<br><strong>Phone:</strong> +234 915 970 1354</p>
+            <p><strong>Email:</strong> hubafritech@gmail.com<br><strong>Phone:</strong> +234 915 970 1354</p>
           </div>
         </div>
       </section>
