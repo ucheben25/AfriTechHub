@@ -1,4 +1,4 @@
-// post.js - Handles loading and editing of opportunity details on post.html
+// post.js - Loads opportunity data and renders a static article view on post.html
 
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Load opportunity data
+  // Retrieve the opportunity data
   const opp = DataStore.getOpportunities(true).find(o => o.id === postId);
   if (!opp) {
     console.error('Opportunity not found for ID:', postId);
@@ -18,58 +18,59 @@ document.addEventListener('DOMContentLoaded', () => {
   const main = document.getElementById('post-content');
   if (!main) return;
 
-  // Build editable form
-  const form = document.createElement('div');
-  form.className = 'post-detail';
+  // Build a read‑only article layout
+  const article = document.createElement('article');
+  article.className = 'post-detail';
 
-  const fields = [
-    { label: 'Title', key: 'title', type: 'input' },
-    { label: 'Company', key: 'company', type: 'input' },
-    { label: 'Location', key: 'location', type: 'input' },
-    { label: 'Category', key: 'category', type: 'input' },
-    { label: 'Short Description', key: 'shortDescription', type: 'textarea' },
-    { label: 'Full Description', key: 'description', type: 'textarea' },
-    { label: 'Application Link', key: 'applyUrl', type: 'input' }
+  const title = document.createElement('h1');
+  title.textContent = opp.title || '';
+  article.appendChild(title);
+
+  if (opp.image) {
+    const img = document.createElement('img');
+    img.src = opp.image;
+    img.alt = opp.title || 'Opportunity image';
+    img.className = 'post-image';
+    article.appendChild(img);
+  }
+
+  const metaList = document.createElement('ul');
+  metaList.className = 'post-meta';
+  const metaFields = [
+    { label: 'Company', value: opp.company },
+    { label: 'Location', value: opp.location },
+    { label: 'Category', value: opp.category },
+    { label: 'Deadline', value: opp.deadline }
   ];
-
-  fields.forEach(f => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'post-field';
-    const label = document.createElement('label');
-    label.textContent = f.label;
-    label.htmlFor = `post-${f.key}`;
-    let control;
-    if (f.type === 'textarea') {
-      control = document.createElement('textarea');
-    } else {
-      control = document.createElement('input');
-      control.type = 'text';
+  metaFields.forEach(item => {
+    if (item.value) {
+      const li = document.createElement('li');
+      li.textContent = `${item.label}: ${item.value}`;
+      metaList.appendChild(li);
     }
-    control.id = `post-${f.key}`;
-    control.value = opp[f.key] || '';
-    // Auto‑save on every change
-    control.addEventListener('input', () => {
-      opp[f.key] = control.value;
-      DataStore.saveOpportunity(opp);
-      showToast('Changes saved');
-    });
-    wrapper.appendChild(label);
-    wrapper.appendChild(control);
-    form.appendChild(wrapper);
   });
+  article.appendChild(metaList);
 
-  main.appendChild(form);
+  const shortDesc = document.createElement('p');
+  shortDesc.className = 'post-short';
+  shortDesc.textContent = opp.shortDescription || '';
+  article.appendChild(shortDesc);
+
+  const desc = document.createElement('div');
+  desc.className = 'post-description';
+  // Insert raw HTML safely – description may contain line breaks and formatting
+  desc.innerHTML = opp.description || '';
+  article.appendChild(desc);
+
+  if (opp.applyUrl) {
+    const applyLink = document.createElement('a');
+    applyLink.href = opp.applyUrl;
+    applyLink.target = '_blank';
+    applyLink.rel = 'noopener noreferrer';
+    applyLink.textContent = 'Apply Now';
+    applyLink.className = 'apply-button';
+    article.appendChild(applyLink);
+  }
+
+  main.appendChild(article);
 });
-
-function showToast(message) {
-  const toast = document.getElementById('toast-alert');
-  const msg = document.getElementById('toast-message');
-  if (!toast || !msg) return;
-  msg.textContent = message;
-  toast.setAttribute('aria-hidden', 'false');
-  toast.classList.add('show');
-  setTimeout(() => {
-    toast.setAttribute('aria-hidden', 'true');
-    toast.classList.remove('show');
-  }, 2000);
-}
