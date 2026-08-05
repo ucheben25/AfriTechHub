@@ -1220,7 +1220,7 @@ const App = {
         <div class="card-footer">
           <span class="deadline-timer"><i class="fa-solid fa-clock-rotate-left"></i> ${formattedDeadline}</span>
           <div class="card-actions">
-            <a href="#post/${opp.id}" class="btn btn-secondary btn-sm" aria-label="Details for ${opp.title}">Details</a>
+            <a href="post.html?id=${opp.id}" class="btn btn-secondary btn-sm" aria-label="Details for ${opp.title}">Details</a>
             <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" aria-label="Apply for ${opp.title}">Apply <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
           </div>
         </div>
@@ -1444,7 +1444,7 @@ const App = {
               </div>
               <div class="showcase-card-footer">
                 <span class="showcase-deadline"><i class="fa-solid fa-hourglass-half"></i> Deadline: Sept 30, 2026</span>
-                <a href="#opportunities" class="btn btn-outline btn-sm">Preview Board</a>
+                
               </div>
             </div>
           </div>
