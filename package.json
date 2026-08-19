@@ -1,0 +1,14 @@
+{
+  "name": "afri-tech-hub-qa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "http-server -p 8080",
+    "qa:screenshots": "node scripts/qa-screenshots.js",
+    "images:optimize": "node scripts/optimize-images.js"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "puppeteer": "^20.9.0"
+  }
+}
