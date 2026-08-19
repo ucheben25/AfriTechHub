@@ -1604,7 +1604,7 @@ const App = {
       <!-- Opportunities Directory Page Hero Banner -->
       <section class="page-hero-banner">
         <div class="container">
-          <h1>Opportunities Directory</h1>
+          <h1>Opportunities</h1>
           <p>Discover verified tech vacancies, startup grants, graduate fellowships, and academic scholarships tailored for African innovators.</p>
         </div>
       </section>
@@ -1726,8 +1726,8 @@ const App = {
       <!-- About Page Hero Banner -->
       <section class="page-hero-banner">
         <div class="container">
-          <h1>About Afri Tech Hub</h1>
-          <p>A zero-barrier, open-access platform connecting African talent to verified global opportunities.</p>
+          <h1>About</h1>
+          <p>Building the largest open-access opportunity network for African technologists and innovators.</p>
         </div>
       </section>
 
@@ -1793,8 +1793,8 @@ const App = {
       <!-- FAQ Page Hero Banner -->
       <section class="page-hero-banner">
         <div class="container">
-          <h1>Frequently Asked Questions</h1>
-          <p>Everything you need to know about using Afri Tech Hub.</p>
+          <h1>FAQs</h1>
+          <p>Common questions about using the platform, submitting opportunities, and our verification process.</p>
         </div>
       </section>
 
@@ -1832,8 +1832,8 @@ const App = {
       <!-- Contact Page Hero Banner -->
       <section class="page-hero-banner">
         <div class="container">
-          <h1>Contact Us</h1>
-          <p>We respond within 24 hours. Reach out for partnerships, listing submissions, or platform enquiries.</p>
+          <h1>Contact</h1>
+          <p>Have a question, partnership proposal, or found an issue? We're here to help.</p>
         </div>
       </section>
 
@@ -2728,7 +2728,7 @@ const App = {
       <!-- Privacy Policy Page Hero Banner -->
       <section class="page-hero-banner">
         <div class="container">
-          <h1>Privacy Policy</h1>
+          <h1>Privacy</h1>
           <p>Our commitment to protecting your privacy and maintaining a transparent, open-access platform.</p>
         </div>
       </section>
@@ -2786,7 +2786,7 @@ const App = {
       <!-- Terms of Use Page Hero Banner -->
       <section class="page-hero-banner">
         <div class="container">
-          <h1>Terms of Use</h1>
+          <h1>Terms</h1>
           <p>Terms and conditions governing open-access use of the Afri Tech Hub platform.</p>
         </div>
       </section>
