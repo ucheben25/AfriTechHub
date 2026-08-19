@@ -4726,7 +4726,7 @@ textarea.admin-form-control {
    ========================================================================== */
 .page-hero-banner {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  padding: 80px 0 72px;
+  padding: 40px 0 36px;
   text-align: center;
   color: #ffffff;
   position: relative;
@@ -5508,9 +5508,9 @@ main > div:last-child {
    GLOBAL MOBILE RESPONSIVE FIXES
    ========================================================================== */
 @media (max-width: 768px) {
-  /* 1. Reduce Header Banner Height */
+  /* 1. Reduce Header Banner Height by 50% */
   .page-hero-banner {
-    padding: 40px 0 32px !important;
+    padding: 20px 0 16px !important;
   }
 
   /* 2. Fix Mobile Content Being Cut Off */

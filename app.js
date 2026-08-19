@@ -1958,7 +1958,7 @@ const App = {
               <div class="about-contact-card">
                 <h4>Contact Us</h4>
                 <p><i class="fa-solid fa-envelope"></i> hubafritech@gmail.com</p>
-                <p><i class="fa-solid fa-phone"></i> +234 915 970 1354</p>
+                <p><i class="fa-solid fa-phone"></i> <a href="tel:+2347065917720" style="color:inherit;">+234 706 591 7720</a></p>
                 <a href="#contact" class="btn btn-outline btn-sm" style="margin-top:12px;">Send a Message</a>
               </div>
             </div>
@@ -2028,11 +2028,11 @@ const App = {
                 <span class="contact-chip-value">hubafritech@gmail.com</span>
               </div>
             </a>
-            <a href="tel:+2349159701354" class="contact-chip">
+            <a href="tel:+2347065917720" class="contact-chip">
               <div class="contact-chip-icon phone"><i class="fa-solid fa-phone"></i></div>
               <div class="contact-chip-body">
                 <span class="contact-chip-label">Call Us</span>
-                <span class="contact-chip-value">+234 915 970 1354</span>
+                <span class="contact-chip-value">+234 706 591 7720</span>
               </div>
             </a>
             <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="contact-chip">
@@ -3046,7 +3046,7 @@ const App = {
               
               <h2>8. Contact Us</h2>
               <p>If you have any questions regarding this Privacy Policy or how we handle your data, please contact us at:</p>
-              <p><strong>Email:</strong> hubafritech@gmail.com<br><strong>Phone:</strong> +234 915 970 1354</p>
+              <p><strong>Email:</strong> hubafritech@gmail.com<br><strong>Phone:</strong> <a href="tel:+2347065917720" style="color:inherit;">+234 706 591 7720</a></p>
             </div>
           </div>
         </div>
