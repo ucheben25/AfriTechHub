@@ -521,26 +521,41 @@ const App = {
         });
       }
 
-      // Newsletter
+      // Newsletter Public Subscription Form
       const newsletterForm = document.getElementById("home-newsletter-form");
       if (newsletterForm) {
-        newsletterForm.addEventListener("submit", (e) => {
+        newsletterForm.addEventListener("submit", async (e) => {
           e.preventDefault();
-          const email = newsletterForm.querySelector("input").value.trim();
-          if (email) {
-            const added = DataStore.addSubscriber(email);
-            if (added) {
-              this.showToast(
-                "Thank you! You have been successfully subscribed to newsletter updates.",
-                "success",
-              );
+          const emailInput = newsletterForm.querySelector("input");
+          const submitBtn = newsletterForm.querySelector("button[type='submit']");
+          const email = emailInput ? emailInput.value.trim() : "";
+
+          if (!email) return;
+
+          const originalText = submitBtn ? submitBtn.innerHTML : "Subscribe";
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Subscribing...';
+          }
+
+          try {
+            const res = DataStore.addSubscriber(email, "Homepage Newsletter Form");
+            if (res.success) {
+              this.showToast(res.message, "success");
+              newsletterForm.reset();
+            } else if (res.duplicate) {
+              this.showToast(res.message, "info");
             } else {
-              this.showToast(
-                "You are already subscribed to the newsletter!",
-                "info",
-              );
+              this.showToast(res.message || "Failed to subscribe. Please try again.", "error");
             }
-            newsletterForm.reset();
+          } catch (err) {
+            console.error("Subscription error:", err);
+            this.showToast("Something went wrong. Please try again.", "error");
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = originalText;
+            }
           }
         });
       }
@@ -1118,38 +1133,173 @@ const App = {
     }
 
     if (tab === "subscribers") {
-      const copyBtn = document.getElementById("admin-sub-copy");
+      const searchInput = document.getElementById("adm-sub-search");
+      const filterTabs = document.querySelectorAll("#adm-sub-filter-tabs .sub-filter-btn");
       const listContainer = document.getElementById("admin-subscribers-list");
+      const exportCsvBtn = document.getElementById("adm-sub-export-csv");
+      const createNewsBtn = document.getElementById("adm-sub-create-newsletter");
 
-      if (copyBtn) {
-        copyBtn.addEventListener("click", () => {
-          const emails = DataStore.getSubscribers();
-          if (emails.length === 0) {
-            this.showToast("No subscribers to copy.", "error");
-            return;
-          }
-          navigator.clipboard
-            .writeText(emails.join(", "))
-            .then(() =>
-              this.showToast(
-                "All subscriber emails copied to clipboard!",
-                "success",
-              ),
-            );
+      const composerModal = document.getElementById("newsletter-composer-modal");
+      const composerForm = document.getElementById("newsletter-composer-form");
+      const btnCloseComposer = document.getElementById("btn-close-composer");
+
+      const previewModal = document.getElementById("newsletter-preview-modal");
+      const btnPreview = document.getElementById("btn-preview-newsletter");
+      const btnClosePreview = document.getElementById("btn-close-preview");
+      const btnBackPreview = document.getElementById("btn-back-from-preview");
+
+      let currentStatusFilter = "all";
+
+      const filterSubscribers = () => {
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        let filtered = DataStore.getSubscribers();
+
+        if (currentStatusFilter !== "all") {
+          filtered = filtered.filter(s => s.status === currentStatusFilter);
+        }
+
+        if (query) {
+          filtered = filtered.filter(s => s.email.toLowerCase().includes(query));
+        }
+
+        if (listContainer) {
+          listContainer.innerHTML = this.renderSubscribersList(filtered);
+        }
+      };
+
+      if (searchInput) {
+        searchInput.addEventListener("input", filterSubscribers);
+      }
+
+      if (filterTabs && filterTabs.length) {
+        filterTabs.forEach(btn => {
+          btn.addEventListener("click", () => {
+            filterTabs.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentStatusFilter = btn.getAttribute("data-filter");
+            filterSubscribers();
+          });
         });
       }
 
-      listContainer.addEventListener("click", (e) => {
-        const delBtn = e.target.closest(".btn-sub-delete");
-        if (delBtn) {
-          const email = delBtn.getAttribute("data-email");
-          if (confirm(`Remove ${email} from subscribers list?`)) {
-            DataStore.deleteSubscriber(email);
-            this.showToast(`${email} removed.`, "info");
+      if (exportCsvBtn) {
+        exportCsvBtn.addEventListener("click", () => {
+          const csvData = DataStore.exportSubscribersCSV(currentStatusFilter);
+          const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.setAttribute("href", url);
+          link.setAttribute("download", `afritechhub_subscribers_${currentStatusFilter}_${Date.now()}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          this.showToast("Subscribers CSV exported successfully.", "success");
+        });
+      }
+
+      // Action buttons delegation: toggle & delete
+      if (listContainer) {
+        listContainer.addEventListener("click", (e) => {
+          const toggleBtn = e.target.closest(".btn-sub-toggle");
+          const deleteBtn = e.target.closest(".btn-sub-delete");
+
+          if (toggleBtn) {
+            const id = toggleBtn.getAttribute("data-id");
+            const currentStatus = toggleBtn.getAttribute("data-status");
+            const newStatus = currentStatus === "active" ? "unsubscribed" : "active";
+            DataStore.updateSubscriberStatus(id, newStatus);
+            this.showToast(`Subscriber status updated to ${newStatus}.`, "success");
             this.renderView("admin-dashboard");
           }
-        }
-      });
+
+          if (deleteBtn) {
+            const id = deleteBtn.getAttribute("data-id");
+            const email = deleteBtn.getAttribute("data-email");
+            if (confirm(`Are you sure you want to permanently delete ${email}?`)) {
+              DataStore.deleteSubscriber(id);
+              this.showToast("Subscriber removed successfully.", "info");
+              this.renderView("admin-dashboard");
+            }
+          }
+        });
+      }
+
+      // Modal triggers for newsletter composition
+      if (createNewsBtn && composerModal) {
+        createNewsBtn.addEventListener("click", () => {
+          composerModal.classList.add("active");
+        });
+      }
+
+      if (btnCloseComposer && composerModal) {
+        btnCloseComposer.addEventListener("click", () => {
+          composerModal.classList.remove("active");
+        });
+      }
+
+      if (btnPreview && composerModal && previewModal) {
+        btnPreview.addEventListener("click", () => {
+          const subject = document.getElementById("composer-subject").value.trim();
+          const content = document.getElementById("composer-content").value.trim();
+          if (!subject || !content) {
+            this.showToast("Please enter subject line and content before previewing.", "info");
+            return;
+          }
+          document.getElementById("preview-subject-text").innerText = subject;
+          document.getElementById("preview-body-text").innerText = content;
+          composerModal.classList.remove("active");
+          previewModal.classList.add("active");
+        });
+      }
+
+      if (btnClosePreview && previewModal) {
+        btnClosePreview.addEventListener("click", () => {
+          previewModal.classList.remove("active");
+        });
+      }
+
+      if (btnBackPreview && previewModal && composerModal) {
+        btnBackPreview.addEventListener("click", () => {
+          previewModal.classList.remove("active");
+          composerModal.classList.add("active");
+        });
+      }
+
+      if (composerForm) {
+        composerForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const subject = document.getElementById("composer-subject").value.trim();
+          const audience = document.getElementById("composer-audience").value;
+          const content = document.getElementById("composer-content").value.trim();
+
+          const sendBtn = document.getElementById("btn-send-newsletter");
+          const originalText = sendBtn ? sendBtn.innerHTML : "Send Newsletter";
+
+          if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+          }
+
+          try {
+            const res = await DataStore.sendNewsletter({ subject, content, audience });
+            if (res.success) {
+              this.showToast(res.message, "success");
+              composerForm.reset();
+              if (composerModal) composerModal.classList.remove("active");
+            } else {
+              this.showToast(res.message || "Failed to send newsletter.", "error");
+            }
+          } catch (err) {
+            console.error("Newsletter send error:", err);
+            this.showToast("Something went wrong. Please try again.", "error");
+          } finally {
+            if (sendBtn) {
+              sendBtn.disabled = false;
+              sendBtn.innerHTML = originalText;
+            }
+          }
+        });
+      }
     }
 
     if (tab === "messages") {
@@ -1251,6 +1401,36 @@ const App = {
   // ==========================================================================
   // VIEW TEMPLATES LITERALS
   // ==========================================================================
+
+  renderSubscribersList(subs) {
+    if (!subs || subs.length === 0) {
+      return '<tr><td colspan="5" class="text-center" style="padding:40px; color:var(--text-muted);">No subscribers match the criteria.</td></tr>';
+    }
+
+    return subs.map(s => `
+      <tr>
+        <td style="font-weight:600; color:var(--text-primary);">${s.email}</td>
+        <td style="color:var(--text-secondary); font-size:13px;">${s.subscribedAt ? new Date(s.subscribedAt).toLocaleDateString() : 'N/A'}</td>
+        <td>
+          <span class="badge-sub-status ${s.status}">
+            <i class="fa-solid ${s.status === 'active' ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+            ${s.status}
+          </span>
+        </td>
+        <td style="color:var(--text-muted); font-size:13px;">${s.source || 'Homepage'}</td>
+        <td style="text-align:right;">
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn btn-secondary btn-sm btn-sub-toggle" data-id="${s.id}" data-status="${s.status}" title="${s.status === 'active' ? 'Unsubscribe' : 'Reactivate'}">
+              <i class="fa-solid ${s.status === 'active' ? 'fa-user-slash' : 'fa-user-check'}"></i>
+            </button>
+            <button class="btn btn-delete btn-sm btn-sub-delete" data-id="${s.id}" data-email="${s.email}" title="Remove subscriber">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  },
 
   cardTemplate(opp) {
     const formattedDeadline =
@@ -1866,7 +2046,7 @@ const App = {
               <div class="contact-chip-icon location"><i class="fa-solid fa-location-dot"></i></div>
               <div class="contact-chip-body">
                 <span class="contact-chip-label">Our Office</span>
-                <span class="contact-chip-value">Victoria Island, Lagos, NG</span>
+                <span class="contact-chip-value">Aba, Abia State, Nigeria</span>
               </div>
             </div>
           </div>
@@ -2643,41 +2823,134 @@ const App = {
     }
 
     if (tab === "subscribers") {
+      const stats = DataStore.getSubscriberStats();
       const subs = DataStore.getSubscribers();
+
       return `
-        <div class="admin-card-body animate-fade-in-up">
-          <div style="display:flex; justify-content:between; align-items:center; gap:20px; margin-bottom:25px; flex-wrap:wrap;">
-            <h3 style="font-size:18px;">Newsletter Subscriptions</h3>
-            <button class="btn btn-primary btn-sm" id="admin-sub-copy"><i class="fa-solid fa-copy"></i> Copy Email List</button>
+        <div class="animate-fade-in-up">
+          <!-- Stat Summary Cards -->
+          <div class="sub-stats-grid">
+            <div class="sub-stat-card">
+              <div class="sub-stat-icon"><i class="fa-solid fa-users"></i></div>
+              <div class="sub-stat-info">
+                <h4>${stats.total}</h4>
+                <p>Total Subscribers</p>
+              </div>
+            </div>
+            <div class="sub-stat-card">
+              <div class="sub-stat-icon active-icon"><i class="fa-solid fa-user-check"></i></div>
+              <div class="sub-stat-info">
+                <h4>${stats.active}</h4>
+                <p>Active Subscribers</p>
+              </div>
+            </div>
+            <div class="sub-stat-card">
+              <div class="sub-stat-icon unsub-icon"><i class="fa-solid fa-user-slash"></i></div>
+              <div class="sub-stat-info">
+                <h4>${stats.unsubscribed}</h4>
+                <p>Unsubscribed</p>
+              </div>
+            </div>
+            <div class="sub-stat-card">
+              <div class="sub-stat-icon month-icon"><i class="fa-solid fa-calendar-plus"></i></div>
+              <div class="sub-stat-info">
+                <h4>${stats.newThisMonth}</h4>
+                <p>New This Month</p>
+              </div>
+            </div>
           </div>
 
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Subscriber Email Address</th>
-                  <th style="width: 150px; text-align:right;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="admin-subscribers-list">
-                ${
-                  subs.length === 0
-                    ? '<tr><td colspan="2" class="text-center" style="padding:40px;">No newsletter signups yet.</td></tr>'
-                    : subs
-                        .map(
-                          (email) => `
-                    <tr>
-                      <td style="font-weight:600; color:var(--text-primary);">${email}</td>
-                      <td style="text-align:right;">
-                        <button class="btn btn-delete btn-sm btn-sub-delete" data-email="${email}"><i class="fa-solid fa-trash-can"></i> Remove</button>
-                      </td>
-                    </tr>
-                  `,
-                        )
-                        .join("")
-                }
-              </tbody>
-            </table>
+          <div class="admin-card-body">
+            <!-- Toolbar: Search, Filters & Export/Compose Actions -->
+            <div class="sub-toolbar">
+              <div class="sub-toolbar-left">
+                <div class="sub-search-box">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" id="adm-sub-search" class="admin-form-control" placeholder="Search subscribers by email...">
+                </div>
+                <div class="sub-filter-tabs" id="adm-sub-filter-tabs">
+                  <button class="sub-filter-btn active" data-filter="all">All (${stats.total})</button>
+                  <button class="sub-filter-btn" data-filter="active">Active (${stats.active})</button>
+                  <button class="sub-filter-btn" data-filter="unsubscribed">Unsubscribed (${stats.unsubscribed})</button>
+                </div>
+              </div>
+              <div class="sub-actions-right">
+                <button class="btn btn-secondary btn-sm" id="adm-sub-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                <button class="btn btn-primary btn-sm" id="adm-sub-create-newsletter"><i class="fa-solid fa-paper-plane"></i> Create Newsletter</button>
+              </div>
+            </div>
+
+            <!-- Subscribers Table -->
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Subscriber Email</th>
+                    <th>Date Subscribed</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th style="width: 140px; text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-subscribers-list">
+                  ${this.renderSubscribersList(subs)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create / Send Newsletter Modal -->
+        <div class="ath-modal-overlay" id="newsletter-composer-modal">
+          <div class="ath-modal-card">
+            <div class="ath-modal-header">
+              <h3><i class="fa-solid fa-paper-plane" style="color:var(--color-primary);"></i> Create & Send Newsletter</h3>
+              <button class="ath-modal-close" id="btn-close-composer"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="newsletter-composer-form">
+              <div class="ath-modal-body">
+                <div class="admin-form-group">
+                  <label class="form-label" for="composer-subject">Newsletter Subject Line *</label>
+                  <input type="text" id="composer-subject" class="admin-form-control" placeholder="e.g. New High-Impact Grants & Developer Jobs for August" required>
+                </div>
+                <div class="admin-form-group">
+                  <label class="form-label" for="composer-audience">Target Audience *</label>
+                  <select id="composer-audience" class="admin-form-control" required>
+                    <option value="active" selected>Active Subscribers Only (${stats.active})</option>
+                    <option value="all">All Subscribers (${stats.total})</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label class="form-label" for="composer-content">Newsletter Content Body *</label>
+                  <textarea id="composer-content" class="admin-form-control" rows="8" placeholder="Enter newsletter content, announcements, or opportunity links..." required></textarea>
+                </div>
+              </div>
+              <div class="ath-modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-preview-newsletter"><i class="fa-solid fa-eye"></i> Preview</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btn-send-newsletter"><i class="fa-solid fa-paper-plane"></i> Send Newsletter</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div class="ath-modal-overlay" id="newsletter-preview-modal">
+          <div class="ath-modal-card">
+            <div class="ath-modal-header">
+              <h3><i class="fa-solid fa-eye" style="color:var(--color-primary);"></i> Newsletter Preview</h3>
+              <button class="ath-modal-close" id="btn-close-preview"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="ath-modal-body" style="background:var(--bg-secondary);">
+              <div style="border:1px solid var(--border-color); border-radius:var(--border-radius-md); padding:20px; background:var(--bg-card);">
+                <div style="font-weight:800; font-size:16px; margin-bottom:10px; color:var(--text-primary);" id="preview-subject-text"></div>
+                <div style="color:var(--text-muted); font-size:12px; margin-bottom:16px;">From: Afri Tech Hub &lt;hubafritech@gmail.com&gt;</div>
+                <hr style="border:none; border-top:1px solid var(--border-color); margin-bottom:16px;">
+                <div style="color:var(--text-secondary); line-height:1.6; white-space:pre-wrap;" id="preview-body-text"></div>
+              </div>
+            </div>
+            <div class="ath-modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-back-from-preview">Back to Editor</button>
+            </div>
           </div>
         </div>
       `;

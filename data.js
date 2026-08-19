@@ -283,27 +283,178 @@ const DataStore = {
     return filtered;
   },
 
-  // Newsletter Signups
+  // Newsletter Signups & Subscriber Management
   getSubscribers() {
     const local = localStorage.getItem('ath_subscribers');
-    return local ? JSON.parse(local) : [];
-  },
-
-  addSubscriber(email) {
-    const subs = this.getSubscribers();
-    if (!subs.includes(email)) {
-      subs.push(email);
-      localStorage.setItem('ath_subscribers', JSON.stringify(subs));
-      return true;
+    if (!local) return [];
+    try {
+      const parsed = JSON.parse(local);
+      if (!Array.isArray(parsed)) return [];
+      // Migrate legacy string array to objects seamlessly
+      const migrated = parsed.map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            id: 'sub-' + (Date.now() - (idx * 1000)),
+            email: item,
+            subscribedAt: new Date(Date.now() - (idx * 86400000)).toISOString(),
+            status: 'active',
+            unsubscribedAt: null,
+            source: 'Homepage'
+          };
+        }
+        return item;
+      });
+      // Save migrated structure if any migration occurred
+      if (parsed.some(item => typeof item === 'string')) {
+        localStorage.setItem('ath_subscribers', JSON.stringify(migrated));
+      }
+      return migrated;
+    } catch (e) {
+      console.error("Failed to parse subscribers, resetting...", e);
+      return [];
     }
-    return false;
   },
 
-  deleteSubscriber(email) {
+  addSubscriber(email, source = 'Homepage') {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { success: false, duplicate: false, message: "Please enter a valid email address." };
+    }
+
     const subs = this.getSubscribers();
-    const filtered = subs.filter(e => e !== email);
+    const existing = subs.find(s => s.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      if (existing.status === 'unsubscribed') {
+        // Reactivate subscriber
+        existing.status = 'active';
+        existing.unsubscribedAt = null;
+        existing.subscribedAt = new Date().toISOString();
+        existing.source = source || existing.source;
+        localStorage.setItem('ath_subscribers', JSON.stringify(subs));
+        this.syncWithNewsletterProvider('subscribe', existing);
+        return { success: true, duplicate: false, reactivated: true, subscriber: existing, message: "You’re resubscribed! Watch your inbox for updates from Afri Tech Hub." };
+      }
+      return { success: false, duplicate: true, message: "You’re already subscribed to the Afri Tech Hub newsletter." };
+    }
+
+    const newSub = {
+      id: 'sub-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      email: cleanEmail,
+      subscribedAt: new Date().toISOString(),
+      status: 'active',
+      unsubscribedAt: null,
+      source: source || 'Homepage'
+    };
+
+    subs.unshift(newSub);
+    localStorage.setItem('ath_subscribers', JSON.stringify(subs));
+    
+    // Asynchronously trigger provider sync
+    this.syncWithNewsletterProvider('subscribe', newSub);
+
+    return { success: true, duplicate: false, subscriber: newSub, message: "You’re subscribed! Watch your inbox for updates from Afri Tech Hub." };
+  },
+
+  updateSubscriberStatus(id, newStatus) {
+    const subs = this.getSubscribers();
+    const sub = subs.find(s => s.id === id || s.email.toLowerCase() === id.toLowerCase());
+    if (sub) {
+      sub.status = newStatus;
+      if (newStatus === 'unsubscribed') {
+        sub.unsubscribedAt = new Date().toISOString();
+      } else {
+        sub.unsubscribedAt = null;
+      }
+      localStorage.setItem('ath_subscribers', JSON.stringify(subs));
+      this.syncWithNewsletterProvider(newStatus === 'active' ? 'subscribe' : 'unsubscribe', sub);
+    }
+    return subs;
+  },
+
+  deleteSubscriber(idOrEmail) {
+    const subs = this.getSubscribers();
+    const filtered = subs.filter(s => s.id !== idOrEmail && s.email.toLowerCase() !== idOrEmail.toLowerCase());
     localStorage.setItem('ath_subscribers', JSON.stringify(filtered));
     return filtered;
+  },
+
+  getSubscriberStats() {
+    const subs = this.getSubscribers();
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const total = subs.length;
+    const active = subs.filter(s => s.status === 'active').length;
+    const unsubscribed = subs.filter(s => s.status === 'unsubscribed').length;
+    const newThisMonth = subs.filter(s => {
+      if (!s.subscribedAt) return false;
+      const d = new Date(s.subscribedAt);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+
+    return { total, active, unsubscribed, newThisMonth };
+  },
+
+  exportSubscribersCSV(filterStatus = 'all') {
+    let subs = this.getSubscribers();
+    if (filterStatus !== 'all') {
+      subs = subs.filter(s => s.status === filterStatus);
+    }
+
+    const headers = ["Subscriber ID", "Email Address", "Date Subscribed", "Status", "Unsubscribed At", "Source"];
+    const rows = subs.map(s => [
+      `"${s.id || ''}"`,
+      `"${s.email || ''}"`,
+      `"${s.subscribedAt ? new Date(s.subscribedAt).toLocaleString() : ''}"`,
+      `"${s.status || 'active'}"`,
+      `"${s.unsubscribedAt ? new Date(s.unsubscribedAt).toLocaleString() : ''}"`,
+      `"${s.source || 'Homepage'}"`
+    ]);
+
+    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  },
+
+  // Newsletter Email Marketing Provider Service Abstraction
+  async syncWithNewsletterProvider(action, subscriber) {
+    const provider = window.NEWSLETTER_PROVIDER || 'brevo';
+    const apiKey = window.NEWSLETTER_API_KEY || null;
+    const listId = window.NEWSLETTER_LIST_ID || null;
+
+    console.log(`[NewsletterProvider:${provider}] Syncing action: ${action}`, subscriber);
+
+    try {
+      if (provider === 'webhook' && window.NEWSLETTER_WEBHOOK_URL) {
+        await fetch(window.NEWSLETTER_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, subscriber, apiKey, listId })
+        });
+      }
+      return { success: true, provider };
+    } catch (err) {
+      console.warn(`[NewsletterProvider:${provider}] Sync warning:`, err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  async sendNewsletter({ subject, content, audience = 'active' }) {
+    const subs = this.getSubscribers();
+    const recipients = subs.filter(s => audience === 'all' || s.status === 'active');
+    
+    if (recipients.length === 0) {
+      return { success: false, message: "No active subscribers found in selected audience." };
+    }
+
+    console.log(`[SendNewsletter] Sending "${subject}" to ${recipients.length} recipients.`);
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    return {
+      success: true,
+      recipientCount: recipients.length,
+      message: `Newsletter successfully sent to ${recipients.length} subscriber(s).`
+    };
   },
 
   // Contact Support Messages
