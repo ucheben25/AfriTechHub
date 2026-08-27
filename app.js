@@ -858,38 +858,23 @@ const App = {
           (o) => o.id === this.state.editingPostId,
         );
         if (opp) {
-          document.getElementById("adm-opp-title").value = opp.title;
-          document.getElementById("adm-opp-company").value = opp.company;
-          document.getElementById("adm-opp-category").value = opp.category;
-          document.getElementById("adm-opp-experience").value =
-            opp.experienceLevel || "Graduate";
-          document.getElementById("adm-opp-remote").value =
-            opp.remote || "Onsite";
-          document.getElementById("adm-opp-country").value = opp.country || "";
-          document.getElementById("adm-opp-location").value = opp.location;
-          document.getElementById("adm-opp-deadline").value = opp.deadline;
-          document.getElementById("adm-opp-short").value = opp.shortDescription;
-          document.getElementById("adm-opp-desc").value = opp.description;
-          document.getElementById("adm-opp-req").value =
-            opp.requirements.join("\n");
-          document.getElementById("adm-opp-ben").value =
-            opp.benefits.join("\n");
-          document.getElementById("adm-opp-url").value = opp.applyUrl;
-          document.getElementById("adm-opp-status").value =
-            opp.status || "published";
-          document.getElementById("adm-opp-featured").checked =
-            opp.featured || false;
+          const titleEl = document.getElementById("adm-opp-title");
+          const catEl = document.getElementById("adm-opp-category");
+          const deadlineEl = document.getElementById("adm-opp-deadline");
+          const descEl = document.getElementById("adm-opp-desc");
+          const urlEl = document.getElementById("adm-opp-url");
 
-          if (opp.image) {
+          if (titleEl) titleEl.value = opp.title || "";
+          if (catEl) catEl.value = opp.category || "";
+          if (deadlineEl) deadlineEl.value = opp.deadline || "";
+          if (descEl) descEl.value = opp.description || "";
+          if (urlEl) urlEl.value = opp.applyUrl || "";
+
+          if (opp.image && filePreview) {
             filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
-            if (opp.image.startsWith("http")) {
+            if (textUrlInput && opp.image.startsWith("http")) {
               textUrlInput.value = opp.image;
             }
-          }
-
-          if (opp.skills) {
-            currentSkills = [...opp.skills];
-            this.renderSkillsTags(currentSkills, skillsContainer);
           }
         }
       }
@@ -962,34 +947,15 @@ const App = {
 
         try {
           const title = document.getElementById("adm-opp-title").value.trim();
-          const company = document.getElementById("adm-opp-company").value.trim();
           const category = document.getElementById("adm-opp-category").value;
-          const exp = document.getElementById("adm-opp-experience").value;
-          const remote = document.getElementById("adm-opp-remote").value;
-          const country = document.getElementById("adm-opp-country").value.trim();
-          const location = document.getElementById("adm-opp-location").value.trim();
           const deadline = document.getElementById("adm-opp-deadline").value;
-          const shortDesc = document.getElementById("adm-opp-short").value.trim();
           const description = document.getElementById("adm-opp-desc").value.trim();
-          const reqText = document.getElementById("adm-opp-req").value.trim();
-          const benText = document.getElementById("adm-opp-ben").value.trim();
           const applyUrl = document.getElementById("adm-opp-url").value.trim();
-          const status = document.getElementById("adm-opp-status").value;
-          const featured = document.getElementById("adm-opp-featured").checked;
           const file = fileInput && fileInput.files ? fileInput.files[0] : null;
           const textUrl = textUrlInput ? textUrlInput.value.trim() : "";
 
           const savePost = (imgDataFromFile) => {
             try {
-              const requirements = reqText
-                .split("\n")
-                .map((l) => l.trim())
-                .filter((l) => l.length > 0);
-              const benefits = benText
-                .split("\n")
-                .map((l) => l.trim())
-                .filter((l) => l.length > 0);
-
               let id = this.state.editingPostId;
               let existingPost = null;
               if (id) {
@@ -1006,11 +972,6 @@ const App = {
                   Date.now().toString().slice(-4);
               }
 
-              // Image determination order:
-              // 1. Newly uploaded file Data URL
-              // 2. Text URL input (if specified)
-              // 3. Existing image from post (if editing)
-              // 4. Default category fallback image
               let finalImage = imgDataFromFile;
               if (!finalImage) {
                 if (textUrl) {
@@ -1023,24 +984,24 @@ const App = {
               const targetPost = {
                 id,
                 title,
-                company,
+                company: existingPost ? existingPost.company : "Afri Tech Hub",
                 category,
-                experienceLevel: exp,
-                remote,
-                country: country || "Global",
-                location,
+                experienceLevel: existingPost ? existingPost.experienceLevel : "Graduate",
+                remote: existingPost ? existingPost.remote : "Remote",
+                country: existingPost ? existingPost.country : "Global",
+                location: existingPost ? existingPost.location : "Global / Online",
                 date: existingPost ? existingPost.date : new Date().toISOString().split("T")[0],
                 deadline,
                 image: finalImage || "",
-                shortDescription: shortDesc,
+                shortDescription: existingPost && existingPost.shortDescription ? existingPost.shortDescription : (description ? description.slice(0, 150) + "..." : ""),
                 description,
-                requirements,
-                benefits,
-                skills: currentSkills,
+                requirements: existingPost && existingPost.requirements ? existingPost.requirements : [],
+                benefits: existingPost && existingPost.benefits ? existingPost.benefits : [],
+                skills: existingPost && existingPost.skills ? existingPost.skills : [],
                 applyUrl,
-                featured,
+                featured: existingPost ? existingPost.featured : false,
                 trending: existingPost ? existingPost.trending : false,
-                status,
+                status: "published",
               };
 
               // Persist all changes to central DataStore
@@ -1753,7 +1714,7 @@ const App = {
           <div class="newsletter-card animate-fade-in-up">
             <div class="newsletter-content">
               <h3>Join our WhatsApp Alerts</h3>
-              <p>Receive rolling grants, developer jobs, and academic scholarships straight to your phone. 5,000+ members already subscribed.</p>
+              <p>Receive rolling grants, developer jobs, and academic scholarships straight to your phone. Community members already subscribed.</p>
               <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp mt-2"><i class="fa-brands fa-whatsapp"></i> Join Community</a>
             </div>
             <div class="newsletter-form-container">
@@ -1958,7 +1919,7 @@ const App = {
               <div class="about-contact-card">
                 <h4>Contact Us</h4>
                 <p><i class="fa-solid fa-envelope"></i> hubafritech@gmail.com</p>
-                <p><i class="fa-solid fa-phone"></i> <a href="tel:+2347065917720" style="color:inherit;">+234 706 591 7720</a></p>
+                <p><i class="fa-solid fa-phone"></i> <a href="tel:09159701354" style="color:inherit;">09159701354</a></p>
                 <a href="#contact" class="btn btn-outline btn-sm" style="margin-top:12px;">Send a Message</a>
               </div>
             </div>
@@ -2028,18 +1989,18 @@ const App = {
                 <span class="contact-chip-value">hubafritech@gmail.com</span>
               </div>
             </a>
-            <a href="tel:+2347065917720" class="contact-chip">
+            <a href="tel:09159701354" class="contact-chip">
               <div class="contact-chip-icon phone"><i class="fa-solid fa-phone"></i></div>
               <div class="contact-chip-body">
                 <span class="contact-chip-label">Call Us</span>
-                <span class="contact-chip-value">+234 706 591 7720</span>
+                <span class="contact-chip-value">09159701354</span>
               </div>
             </a>
             <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="contact-chip">
               <div class="contact-chip-icon whatsapp"><i class="fa-brands fa-whatsapp"></i></div>
               <div class="contact-chip-body">
                 <span class="contact-chip-label">WhatsApp Community</span>
-                <span class="contact-chip-value">Join 5,000+ Members</span>
+                <span class="contact-chip-value">Join Community</span>
               </div>
             </a>
             <div class="contact-chip no-link">
@@ -2636,129 +2597,52 @@ const App = {
           </div>
 
           <form id="admin-opp-form">
-            <!-- Row 1: Title & Organization -->
-            <div class="admin-form-row">
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-title">Opportunity Title *</label>
-                <input type="text" id="adm-opp-title" class="admin-form-control" placeholder="e.g. Junior Frontend Developer" required>
-              </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-company">Organization / Sponsor Name *</label>
-                <input type="text" id="adm-opp-company" class="admin-form-control" placeholder="e.g. Google, Canonical" required>
-              </div>
+            <!-- Field 1: Title -->
+            <div class="admin-form-group">
+              <label class="form-label" for="adm-opp-title">1. Opportunity Title *</label>
+              <input type="text" id="adm-opp-title" class="admin-form-control" placeholder="e.g. Call for Applications: Tech Fellowship 2026" required>
             </div>
 
-            <!-- Row 2: Category & Experience & Workplace -->
-            <div class="admin-form-row" style="grid-template-columns: repeat(3, 1fr);">
+            <!-- Field 2 & 3: Category & Deadline -->
+            <div class="admin-form-row" style="grid-template-columns: 1fr 1fr;">
               <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-category">Category *</label>
+                <label class="form-label" for="adm-opp-category">2. Category *</label>
                 <select id="adm-opp-category" class="admin-form-control" required>
                   <option value="" disabled selected>Select category</option>
                   ${categoryOptions}
                 </select>
               </div>
               <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-experience">Experience Target *</label>
-                <select id="adm-opp-experience" class="admin-form-control" required>
-                  <option value="Internship">Internship</option>
-                  <option value="Entry Level">Entry Level</option>
-                  <option value="Graduate">Graduate</option>
-                  <option value="Fellowship">Fellowship</option>
-                  <option value="Scholarship">Scholarship</option>
-                </select>
-              </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-remote">Workplace Model *</label>
-                <select id="adm-opp-remote" class="admin-form-control" required>
-                  <option value="Remote">Remote</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Onsite">Onsite</option>
-                </select>
+                <label class="form-label" for="adm-opp-deadline">3. Application Deadline *</label>
+                <input type="date" id="adm-opp-deadline" class="admin-form-control" required>
               </div>
             </div>
 
-            <!-- Row 3: Country & Location & Deadline -->
-            <div class="admin-form-row" style="grid-template-columns: repeat(3, 1fr);">
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-country">Country Base *</label>
-                <input type="text" id="adm-opp-country" class="admin-form-control" placeholder="e.g. Global, Kenya, Nigeria" required>
-              </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-location">Specific Location *</label>
-                <input type="text" id="adm-opp-location" class="admin-form-control" placeholder="e.g. Nairobi, Kenya or Remote (Global)" required>
-              </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-deadline">Application Deadline *</label>
-                <input type="text" id="adm-opp-deadline" class="admin-form-control" placeholder="YYYY-MM-DD or 'Rolling'" required>
-              </div>
-            </div>
-
-            <!-- Summary -->
+            <!-- Field 4: Details of the Opportunity -->
             <div class="admin-form-group">
-              <label class="form-label" for="adm-opp-short">Short Summary * (Max 150 characters)</label>
-              <input type="text" id="adm-opp-short" class="admin-form-control" maxlength="150" placeholder="Brief tagline shown on search grids" required>
+              <label class="form-label" for="adm-opp-desc">4. Details of the Opportunity *</label>
+              <textarea id="adm-opp-desc" class="admin-form-control" rows="8" placeholder="Enter all relevant details, overview, eligibility criteria, benefits, and instructions..." required></textarea>
             </div>
 
-            <!-- Full Description -->
+            <!-- Field 5: Application Link -->
             <div class="admin-form-group">
-              <label class="form-label" for="adm-opp-desc">Full Opportunity details *</label>
-              <textarea id="adm-opp-desc" class="admin-form-control" rows="5" placeholder="Elaborated description of the vacancy or grant..." required></textarea>
+              <label class="form-label" for="adm-opp-url">5. Official Application Link *</label>
+              <input type="url" id="adm-opp-url" class="admin-form-control" placeholder="https://provider-portal.com/apply" required>
             </div>
 
-            <!-- Row 4: Requirements & Benefits Textareas -->
-            <div class="admin-form-row">
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-req">Requirements List * (One item per line)</label>
-                <textarea id="adm-opp-req" class="admin-form-control" rows="4" placeholder="Requirement 1&#10;Requirement 2&#10;Requirement 3" required></textarea>
-              </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-ben">Benefits List * (One item per line)</label>
-                <textarea id="adm-opp-ben" class="admin-form-control" rows="4" placeholder="Benefit 1&#10;Benefit 2&#10;Benefit 3" required></textarea>
-              </div>
-            </div>
-
-            <!-- Required Skills Input tags -->
+            <!-- Field 6: Image Upload & Preview -->
             <div class="admin-form-group">
-              <label class="form-label" for="adm-opp-skills">Required Skills (Type skill and press comma ',' or Enter)</label>
-              <input type="text" id="adm-opp-skills" class="admin-form-control" placeholder="React, Git, SQL, Python...">
-              <div class="skills-tags-container" id="adm-skills-tags"></div>
-            </div>
-
-            <!-- Image File or URL and Apply URL -->
-            <div class="admin-form-row">
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-url">Official Application link *</label>
-                <input type="url" id="adm-opp-url" class="admin-form-control" placeholder="https://company-portal.com/apply" required>
+              <label class="form-label">6. Opportunity Cover Image</label>
+              <div class="admin-form-row">
+                <div class="admin-form-group" style="margin-bottom:0;">
+                  <input type="file" id="adm-opp-img-file" class="admin-form-control" accept="image/*">
+                </div>
+                <div class="admin-form-group" style="margin-bottom:0;">
+                  <input type="url" id="adm-opp-img-url" class="admin-form-control" placeholder="Or enter Web Image URL https://...">
+                </div>
               </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-status">Post Status *</label>
-                <select id="adm-opp-status" class="admin-form-control" required>
-                  <option value="published">Published (Visible to public)</option>
-                  <option value="draft">Draft (Visible only to admin)</option>
-                  <option value="archived">Archived (Expired/Closed)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="admin-form-row">
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-img-file">Upload Image Cover File</label>
-                <input type="file" id="adm-opp-img-file" class="admin-form-control" accept="image/*">
-              </div>
-              <div class="admin-form-group">
-                <label class="form-label" for="adm-opp-img-url">Or Image Web URL</label>
-                <input type="url" id="adm-opp-img-url" class="admin-form-control" placeholder="https://images.unsplash.com/... or Base64 code">
-              </div>
-            </div>
-
-            <div class="admin-form-group" style="display:flex; align-items:center; gap:20px;">
-              <div class="image-preview-box" id="adm-img-preview">
+              <div class="image-preview-box" id="adm-img-preview" style="margin-top:12px;">
                 <span>No cover selected</span>
-              </div>
-              <div>
-                <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
-                  <input type="checkbox" id="adm-opp-featured" style="width:18px; height:18px;"> Set post as Homepage Featured Pick
-                </label>
               </div>
             </div>
 
@@ -3046,7 +2930,7 @@ const App = {
               
               <h2>8. Contact Us</h2>
               <p>If you have any questions regarding this Privacy Policy or how we handle your data, please contact us at:</p>
-              <p><strong>Email:</strong> hubafritech@gmail.com<br><strong>Phone:</strong> <a href="tel:+2347065917720" style="color:inherit;">+234 706 591 7720</a></p>
+              <p><strong>Email:</strong> hubafritech@gmail.com<br><strong>Phone:</strong> <a href="tel:09159701354" style="color:inherit;">09159701354</a></p>
             </div>
           </div>
         </div>
