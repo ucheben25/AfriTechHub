@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "http-server -p 8080",
+    "seo:build": "node scripts/generate-seo.js",
     "qa:screenshots": "node scripts/qa-screenshots.js",
     "images:optimize": "node scripts/optimize-images.js"
   },

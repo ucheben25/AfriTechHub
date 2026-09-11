@@ -16,7 +16,11 @@ const App = {
     visibleLimit: 6, // limit for opportunities page pagination
     homeVisibleLimit: 6, // limit for home page listings
     editingPostId: null, // holds ID of post being edited, if any
-    activeDashboardTab: "overview", // 'overview', 'posts', 'create', 'categories', 'subscribers', 'messages'
+    activeDashboardTab: "overview", // 'overview', 'posts', 'create', 'categories', 'subscribers', 'messages', 'seo', 'analytics'
+    currentPostId: null,
+    analyticsRange: "7d",
+    analyticsCustomFrom: null,
+    analyticsCustomTo: null,
   },
 
   // DOM Cache for static container items
@@ -96,6 +100,19 @@ const App = {
   bindEvents() {
     // Hash routing
     window.addEventListener("hashchange", () => this.router());
+
+    // Intercept crawlable links (/opportunities/slug) for seamless client routing
+    document.addEventListener("click", (e) => {
+      const oppLink = e.target.closest('a[href^="/opportunities/"]');
+      if (oppLink) {
+        const href = oppLink.getAttribute("href");
+        const slugMatch = href.match(/^\/opportunities\/([^/?#]+)/);
+        if (slugMatch && slugMatch[1]) {
+          e.preventDefault();
+          window.location.hash = `#opportunities/${encodeURIComponent(slugMatch[1])}`;
+        }
+      }
+    });
 
     // Theme toggle button
     this.nodes.themeToggle.addEventListener("click", () => this.toggleTheme());
@@ -229,19 +246,43 @@ const App = {
       }
     }
 
-    // Dynamic ID routing check (e.g. #post/tef-entrepreneurship-2026)
-    if (route.startsWith("#post/")) {
-      const postId = route.substring(6); // Extract ID
+    // Dynamic Opportunity ID routing check (supports #opportunities/slug, #opportunity/slug, #post/slug)
+    let postId = null;
+    if (route.startsWith("#opportunities/")) {
+      postId = route.substring(15);
+    } else if (route.startsWith("#opportunity/")) {
+      postId = route.substring(13);
+    } else if (route.startsWith("#post/")) {
+      postId = route.substring(6);
+    }
+
+    if (postId) {
+      // Check for slug redirection (e.g. if an administrator updated the title & slug)
+      const redirectSlug = DataStore.getRedirect ? DataStore.getRedirect(postId) : null;
+      if (redirectSlug && redirectSlug !== postId) {
+        window.location.hash = `#opportunities/${encodeURIComponent(redirectSlug)}`;
+        return;
+      }
+
       this.state.currentPage = "post-detail";
+      this.state.currentPostId = postId;
       this.updateNavbarActiveState("opportunities");
       this.syncSEO("post-detail", { postId });
+
+      // First-party analytics tracking
+      if (window.ATHAnalytics && typeof window.ATHAnalytics.trackPageView === "function") {
+        window.ATHAnalytics.trackPageView(`#opportunities/${encodeURIComponent(postId)}`);
+        window.ATHAnalytics.trackOpportunityView(postId);
+      }
+
       this.renderView("post-detail", { postId });
       return;
     }
 
     // Clean page name
-    const pageName = route.substring(1);
+    const pageName = route.substring(1) || "home";
     this.state.currentPage = pageName;
+    this.state.currentPostId = null;
     this.updateNavbarActiveState(pageName);
 
     // Route guards
@@ -266,6 +307,11 @@ const App = {
     // Update SEO headers dynamically
     this.syncSEO(pageName);
 
+    // Track First-Party Analytics Page View
+    if (window.ATHAnalytics && typeof window.ATHAnalytics.trackPageView === "function") {
+      window.ATHAnalytics.trackPageView(hash || '#home');
+    }
+
     // Route Mapping
     this.renderView(pageName, queryParams);
   },
@@ -285,53 +331,125 @@ const App = {
   // --- Dynamic SEO synchronization ---
   syncSEO(pageName, params = {}) {
     const metaDesc = document.querySelector('meta[name="description"]');
-    let title = "Afri Tech Hub | Opportunities Directory";
-    let desc =
-      "Empowering African innovators by curating jobs, grants, scholarships, and fellowships. Zero signup required.";
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    const robotsMeta = document.querySelector('meta[name="robots"]');
+    const schemaScript = document.getElementById("dynamic-page-schema");
+    const domain = (DataStore.SITE_CONFIG && DataStore.SITE_CONFIG.domain) || "https://afritechhub.xyz";
+
+    let title = "Afri Tech Hub | Opportunities for African Talent";
+    let desc = "Discover jobs, grants, fellowships, scholarships, internships and other opportunities for African talent on Afri Tech Hub.";
+    let canonical = `${domain}/`;
+    let isNoIndex = false;
+    let ogType = "website";
+    let ogImage = `${domain}/img/logo.png`;
+    let dynamicSchema = null;
 
     if (pageName === "home") {
-      title = "Afri Tech Hub | Empowering African Entrepreneurs & Youth";
-      desc =
-        "Discover verified entry-level tech opportunities, grants, and scholarships across Africa. Access is completely open and free with no login required.";
+      title = "Afri Tech Hub | Opportunities for African Talent";
+      desc = "Discover jobs, grants, fellowships, scholarships, internships and other opportunities for African talent on Afri Tech Hub.";
+      canonical = `${domain}/`;
     } else if (pageName === "opportunities") {
-      title = "Browse Tech Opportunities & Funding | Afri Tech Hub";
-      desc =
-        "Search and filter active tech jobs, graduate trainee programmes, fully-funded scholarships, and startup grants.";
+      title = "Opportunities for African Talent | Afri Tech Hub";
+      desc = "Browse verified tech jobs, startup grants, graduate fellowships, and academic scholarships tailored for African innovators.";
+      canonical = `${domain}/opportunities/`;
     } else if (pageName === "categories") {
       title = "Explore Opportunity Categories | Afri Tech Hub";
-      desc =
-        "Navigate tailored lists of fellowships, internships, business funding, and tech vacancies.";
+      desc = "Navigate tailored lists of fellowships, internships, business funding, and tech vacancies.";
+      canonical = `${domain}/opportunities/`;
     } else if (pageName === "about") {
-      title = "About Us | Afri Tech Hub Mission & Team";
-      desc =
-        "Learn how Afri Tech Hub curates resource listings to support the next generation of African digital professionals.";
+      title = "About Us | Afri Tech Hub";
+      desc = "Learn how Afri Tech Hub empowers African innovators, graduates, and entrepreneurs with open-access career resources.";
+      canonical = `${domain}/about`;
     } else if (pageName === "faq") {
       title = "Frequently Asked Questions | Afri Tech Hub";
-      desc =
-        "Find answers on opportunity verification, application processes, and joining the WhatsApp community.";
+      desc = "Find answers on opportunity verification, application processes, and joining the Afri Tech Hub WhatsApp community.";
+      canonical = `${domain}/faq`;
     } else if (pageName === "contact") {
-      title = "Contact Support & Inquiry | Afri Tech Hub";
-      desc =
-        "Get in touch with Afri Tech Hub to share vacancy listings, submit feedback, or partner with us.";
+      title = "Contact Afri Tech Hub | Support & Inquiries";
+      desc = "Get in touch with Afri Tech Hub to share vacancy listings, submit feedback, or partner with us.";
+      canonical = `${domain}/contact`;
+    } else if (pageName === "privacy") {
+      title = "Privacy Policy | Afri Tech Hub";
+      desc = "Our commitment to protecting your privacy and maintaining a transparent, open-access opportunities directory.";
+      canonical = `${domain}/privacy`;
+    } else if (pageName === "terms") {
+      title = "Terms of Use | Afri Tech Hub";
+      desc = "Terms and conditions governing open-access use of the Afri Tech Hub platform.";
+      canonical = `${domain}/terms`;
     } else if (pageName === "admin-login") {
       title = "Admin Portal Authentication | Afri Tech Hub";
-      desc =
-        "Secure gateway for administrators to login and edit active database postings.";
+      desc = "Secure gateway for administrators to login and edit active database postings.";
+      canonical = `${domain}/#admin-login`;
+      isNoIndex = true;
     } else if (pageName === "admin-dashboard") {
       title = "Admin Panel Overview | Afri Tech Hub";
       desc = "Database management panel for Afri Tech Hub administrators.";
+      canonical = `${domain}/#admin-dashboard`;
+      isNoIndex = true;
     } else if (pageName === "post-detail" && params.postId) {
       const opp = DataStore.getOpportunities(true).find(
         (o) => o.id === params.postId,
       );
-      if (opp) {
-        title = `${opp.title} at ${opp.company} | Afri Tech Hub`;
-        desc = opp.shortDescription;
+      const isAdmin = sessionStorage.getItem("ath_admin_logged_in") === "true";
+      const isPublished = opp && (opp.status === 'published' || !opp.status);
+
+      if (opp && (isPublished || isAdmin)) {
+        const seo = DataStore.getSEOMetadata(opp);
+        title = seo.title;
+        desc = seo.description;
+        canonical = seo.canonical;
+        ogType = "article";
+        ogImage = seo.image;
+        dynamicSchema = seo.structuredData;
+        if (!isPublished) isNoIndex = true; // Protect drafts from indexing
+      } else {
+        title = "Opportunity Not Found | Afri Tech Hub";
+        desc = "This opportunity may have expired, been archived, or removed from the directory.";
+        canonical = `${domain}/opportunities/`;
+        isNoIndex = true;
       }
+    } else if (pageName === "404") {
+      title = "Page Not Found | Afri Tech Hub";
+      desc = "The requested page does not exist on Afri Tech Hub.";
+      canonical = `${domain}/`;
+      isNoIndex = true;
     }
 
     document.title = title;
     if (metaDesc) metaDesc.setAttribute("content", desc);
+    if (canonicalLink) canonicalLink.setAttribute("href", canonical);
+
+    if (robotsMeta) {
+      robotsMeta.setAttribute(
+        "content",
+        isNoIndex
+          ? "noindex, nofollow"
+          : "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+      );
+    }
+
+    const setMeta = (sel, attr, val) => {
+      const el = document.querySelector(sel);
+      if (el) el.setAttribute(attr, val);
+    };
+
+    setMeta('meta[property="og:title"]', "content", title);
+    setMeta('meta[property="og:description"]', "content", desc);
+    setMeta('meta[property="og:url"]', "content", canonical);
+    setMeta('meta[property="og:type"]', "content", ogType);
+    setMeta('meta[property="og:image"]', "content", ogImage);
+
+    setMeta('meta[name="twitter:title"]', "content", title);
+    setMeta('meta[name="twitter:description"]', "content", desc);
+    setMeta('meta[name="twitter:image"]', "content", ogImage);
+
+    if (schemaScript) {
+      if (dynamicSchema) {
+        schemaScript.textContent = JSON.stringify(dynamicSchema, null, 2);
+      } else {
+        schemaScript.textContent = "";
+      }
+    }
   },
 
   // ==========================================================================
@@ -384,23 +502,13 @@ const App = {
           htmlContent = this.templateHome();
       }
 
-      // Update browser document title
-      const titleMap = {
-        "home": "Dashboard Overview",
-        "opportunities": "Opportunities Directory",
-        "categories": "Opportunity Categories",
-        "about": "About AfriTech Hub",
-        "faq": "Frequently Asked Questions",
-        "contact": "Contact Support",
-        "privacy": "Privacy Policy",
-        "terms": "Terms of Use",
-        "admin-login": "Admin Authentication",
-        "admin-dashboard": "Admin Control Panel"
-      };
-      document.title = titleMap[view] ? `${titleMap[view]} | AfriTech Hub` : "AfriTech Hub";
-
       this.nodes.content.innerHTML = htmlContent;
       this.bindViewEvents(view, params);
+
+      // Trigger card viewport observation for first-party impression tracking
+      if (window.ATHAnalytics && typeof window.ATHAnalytics.observeCardImpressions === "function") {
+        window.ATHAnalytics.observeCardImpressions(this.nodes.content);
+      }
     }, 200); // Premium brief transition delay
   },
 
@@ -478,6 +586,9 @@ const App = {
           cardsGrid.innerHTML = subset
             .map((opp) => this.cardTemplate(opp))
             .join("");
+          if (window.ATHAnalytics && typeof window.ATHAnalytics.observeCardImpressions === "function") {
+            window.ATHAnalytics.observeCardImpressions(cardsGrid);
+          }
         }
       };
 
@@ -667,6 +778,9 @@ const App = {
           oppGrid.innerHTML = filtered
             .map((opp) => this.cardTemplate(opp))
             .join("");
+          if (window.ATHAnalytics && typeof window.ATHAnalytics.observeCardImpressions === "function") {
+            window.ATHAnalytics.observeCardImpressions(oppGrid);
+          }
         }
       };
 
@@ -726,6 +840,39 @@ const App = {
             .catch(() => this.showToast("Failed to copy link.", "error"));
         });
       }
+
+      // Image Lightbox Modal logic
+      const lightboxModal = document.getElementById("post-image-lightbox");
+      const expandTrigger = document.getElementById("hero-img-expand-trigger");
+      const mainHeroImg = document.getElementById("hero-main-img");
+      const lightboxClose = document.getElementById("lightbox-close-trigger");
+
+      const openLightbox = () => {
+        if (lightboxModal) lightboxModal.classList.add("active");
+        document.body.style.overflow = "hidden";
+      };
+
+      const closeLightbox = () => {
+        if (lightboxModal) lightboxModal.classList.remove("active");
+        document.body.style.overflow = "";
+      };
+
+      if (expandTrigger) expandTrigger.addEventListener("click", openLightbox);
+      if (mainHeroImg) mainHeroImg.addEventListener("click", openLightbox);
+      if (lightboxClose) lightboxClose.addEventListener("click", closeLightbox);
+
+      if (lightboxModal) {
+        lightboxModal.addEventListener("click", (e) => {
+          if (e.target === lightboxModal) closeLightbox();
+        });
+      }
+
+      const escHandler = (e) => {
+        if (e.key === "Escape" && lightboxModal && lightboxModal.classList.contains("active")) {
+          closeLightbox();
+        }
+      };
+      document.addEventListener("keydown", escHandler);
     }
 
     if (view === "admin-login") {
@@ -850,7 +997,41 @@ const App = {
       const skillsInput = document.getElementById("adm-opp-skills");
       const skillsContainer = document.getElementById("adm-skills-tags");
 
-      let currentSkills = [];
+      // SEO Preview elements
+      const seoTitleInput = document.getElementById("adm-opp-seo-title");
+      const seoDescInput = document.getElementById("adm-opp-seo-desc");
+      const statusSelect = document.getElementById("adm-opp-status");
+      const previewGoogleTitle = document.getElementById("preview-google-title");
+      const previewGoogleDesc = document.getElementById("preview-google-desc");
+      const seoTitleCount = document.getElementById("adm-seo-title-count");
+      const seoDescCount = document.getElementById("adm-seo-desc-count");
+
+      const updateGooglePreview = () => {
+        const titleVal = (document.getElementById("adm-opp-title") ? document.getElementById("adm-opp-title").value.trim() : "") || "Opportunity Title";
+        const descVal = (document.getElementById("adm-opp-desc") ? document.getElementById("adm-opp-desc").value.trim() : "");
+        const customTitle = seoTitleInput ? seoTitleInput.value.trim() : "";
+        const customDesc = seoDescInput ? seoDescInput.value.trim() : "";
+
+        const effectiveTitle = customTitle || `${titleVal} | Afri Tech Hub`;
+        const effectiveDesc = customDesc || (descVal ? descVal.slice(0, 150) + "..." : "Snippet preview will show how this opportunity listing appears on Google Search.");
+
+        if (previewGoogleTitle) previewGoogleTitle.textContent = effectiveTitle;
+        if (previewGoogleDesc) previewGoogleDesc.textContent = effectiveDesc;
+
+        if (seoTitleCount && seoTitleInput) {
+          seoTitleCount.textContent = `${seoTitleInput.value.length} / 70`;
+        }
+        if (seoDescCount && seoDescInput) {
+          seoDescCount.textContent = `${seoDescInput.value.length} / 160`;
+        }
+      };
+
+      if (seoTitleInput) seoTitleInput.addEventListener("input", updateGooglePreview);
+      if (seoDescInput) seoDescInput.addEventListener("input", updateGooglePreview);
+      const titleInput = document.getElementById("adm-opp-title");
+      const descInput = document.getElementById("adm-opp-desc");
+      if (titleInput) titleInput.addEventListener("input", updateGooglePreview);
+      if (descInput) descInput.addEventListener("input", updateGooglePreview);
 
       // Edit Mode Preloading
       if (this.state.editingPostId) {
@@ -869,6 +1050,11 @@ const App = {
           if (deadlineEl) deadlineEl.value = opp.deadline || "";
           if (descEl) descEl.value = opp.description || "";
           if (urlEl) urlEl.value = opp.applyUrl || "";
+          if (statusSelect) statusSelect.value = opp.status || "published";
+          if (seoTitleInput) seoTitleInput.value = opp.seoTitle || "";
+          if (seoDescInput) seoDescInput.value = opp.seoDescription || "";
+
+          updateGooglePreview();
 
           if (opp.image && filePreview) {
             filePreview.innerHTML = `<img src="${opp.image}" alt="Preview">`;
@@ -889,36 +1075,40 @@ const App = {
         });
       }
 
-      // Handle Skills comma trigger
-      skillsInput.addEventListener("keydown", (e) => {
-        if (e.key === "," || e.key === "Enter") {
-          e.preventDefault();
-          const val = skillsInput.value.trim().replace(/,/g, "");
-          if (val && !currentSkills.includes(val)) {
-            currentSkills.push(val);
-            this.renderSkillsTags(currentSkills, skillsContainer);
+      // Handle Skills comma trigger if element exists
+      if (skillsInput) {
+        skillsInput.addEventListener("keydown", (e) => {
+          if (e.key === "," || e.key === "Enter") {
+            e.preventDefault();
+            const val = skillsInput.value.trim().replace(/,/g, "");
+            if (val && !currentSkills.includes(val)) {
+              currentSkills.push(val);
+              if (skillsContainer) this.renderSkillsTags(currentSkills, skillsContainer);
+            }
+            skillsInput.value = "";
           }
-          skillsInput.value = "";
-        }
-      });
+        });
+      }
 
       // Handle Image File Preloading Preview
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            filePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      if (fileInput) {
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              filePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
 
       // Handle Image URL input sync preview
       if (textUrlInput) {
         textUrlInput.addEventListener("input", () => {
           const val = textUrlInput.value.trim();
-          if (val) {
+          if (val && filePreview) {
             filePreview.innerHTML = `<img src="${val}" alt="Preview">`;
           }
         });
@@ -951,6 +1141,9 @@ const App = {
           const deadline = document.getElementById("adm-opp-deadline").value;
           const description = document.getElementById("adm-opp-desc").value.trim();
           const applyUrl = document.getElementById("adm-opp-url").value.trim();
+          const status = statusSelect ? statusSelect.value : "published";
+          const seoTitle = seoTitleInput ? seoTitleInput.value.trim() : "";
+          const seoDescription = seoDescInput ? seoDescInput.value.trim() : "";
           const file = fileInput && fileInput.files ? fileInput.files[0] : null;
           const textUrl = textUrlInput ? textUrlInput.value.trim() : "";
 
@@ -958,18 +1151,14 @@ const App = {
             try {
               let id = this.state.editingPostId;
               let existingPost = null;
+              let previousSlug = null;
               if (id) {
                 existingPost = this.state.opportunities.find((o) => o.id === id);
+                previousSlug = existingPost ? existingPost.id : null;
               }
 
               if (!id) {
-                id =
-                  title
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/(^-|-$)+/g, "") +
-                  "-" +
-                  Date.now().toString().slice(-4);
+                id = DataStore.generateUniqueSlug ? DataStore.generateUniqueSlug(title) : (title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "") + "-" + Date.now().toString().slice(-4));
               }
 
               let finalImage = imgDataFromFile;
@@ -1001,11 +1190,13 @@ const App = {
                 applyUrl,
                 featured: existingPost ? existingPost.featured : false,
                 trending: existingPost ? existingPost.trending : false,
-                status: "published",
+                status,
+                seoTitle: seoTitle || undefined,
+                seoDescription: seoDescription || undefined,
               };
 
-              // Persist all changes to central DataStore
-              DataStore.saveOpportunity(targetPost);
+              // Persist all changes to central DataStore (with previousSlug for redirects)
+              DataStore.saveOpportunity(targetPost, previousSlug);
 
               // Reset editing state & set tab back to Manage Posts
               this.state.editingPostId = null;
@@ -1286,6 +1477,92 @@ const App = {
         }
       });
     }
+
+    if (tab === "seo") {
+      const sitemapPreview = document.getElementById("admin-sitemap-preview");
+      const btnDownloadSitemap = document.getElementById("btn-download-sitemap");
+      const btnCopySitemap = document.getElementById("btn-copy-sitemap");
+      const btnDownloadRobots = document.getElementById("btn-download-robots");
+
+      const currentXml = DataStore.generateSitemapXml ? DataStore.generateSitemapXml() : "";
+      if (sitemapPreview) {
+        sitemapPreview.textContent = currentXml;
+      }
+
+      if (btnDownloadSitemap) {
+        btnDownloadSitemap.addEventListener("click", () => {
+          const blob = new Blob([currentXml], { type: "application/xml;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "sitemap.xml";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          this.showToast("sitemap.xml downloaded successfully.", "success");
+        });
+      }
+
+      if (btnCopySitemap) {
+        btnCopySitemap.addEventListener("click", () => {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(currentXml).then(() => {
+              this.showToast("Sitemap XML copied to clipboard.", "success");
+            }).catch(() => {
+              this.showToast("Failed to copy to clipboard.", "error");
+            });
+          } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = currentXml;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            this.showToast("Sitemap XML copied to clipboard.", "success");
+          }
+        });
+      }
+
+      if (btnDownloadRobots) {
+        btnDownloadRobots.addEventListener("click", () => {
+          const domain = (DataStore.SITE_CONFIG && DataStore.SITE_CONFIG.domain) || "https://afritechhub.xyz";
+          const robotsTxt = `# robots.txt for Afri Tech Hub
+User-agent: *
+Allow: /
+Allow: /opportunities/
+Allow: /about
+Allow: /faq
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+# Disallow private admin directories and draft endpoints
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /#admin-login
+Disallow: /#admin-dashboard
+
+# Dynamic XML Sitemap location
+Sitemap: ${domain}/sitemap.xml
+`;
+          const blob = new Blob([robotsTxt], { type: "text/plain;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "robots.txt";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          this.showToast("robots.txt downloaded successfully.", "success");
+        });
+      }
+    }
+
+    if (tab === "analytics") {
+      this.bindAnalyticsTabEvents();
+    }
   },
 
   renderSkillsTags(skills, container) {
@@ -1406,10 +1683,12 @@ const App = {
     const fallbackImg = CATEGORY_IMAGES[catKey] || CATEGORY_IMAGES["jobs"];
     const hasApplyUrl = opp.applyUrl && opp.applyUrl.trim() !== "" && opp.applyUrl !== "#";
 
+    const escapedTitle = (opp.title || '').replace(/"/g, '&quot;');
+
     return `
-      <article class="opportunity-card animate-fade-in-up">
+      <article class="opportunity-card animate-fade-in-up" data-opp-id="${opp.id}" data-opp-title="${escapedTitle}">
         <div class="card-image-container">
-          <a href="#post/${opp.id}" aria-label="View details for ${opp.title}">
+          <a href="/opportunities/${opp.id}" data-slug="${opp.id}" data-analytics="opportunity-click" data-opp-id="${opp.id}" aria-label="View details for ${opp.title}">
             <img src="${opp.image || fallbackImg}" alt="${opp.company} Cover" loading="lazy" onerror="this.onerror=null; this.src='${fallbackImg}';">
           </a>
           <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, "")}">${opp.category}</span>
@@ -1420,7 +1699,7 @@ const App = {
             <span class="company-name"><i class="fa-solid fa-building"></i> ${opp.company}</span>
             <span class="location"><i class="fa-solid fa-location-dot"></i> ${opp.location}</span>
           </div>
-          <h3 class="card-title"><a href="#post/${opp.id}">${opp.title}</a></h3>
+          <h3 class="card-title"><a href="/opportunities/${opp.id}" data-slug="${opp.id}" data-analytics="opportunity-click" data-opp-id="${opp.id}">${opp.title}</a></h3>
           <p class="card-desc">${opp.shortDescription || opp.description || ""}</p>
           <div class="card-skills-strip">
             ${skillsBadges}
@@ -1429,9 +1708,9 @@ const App = {
         <div class="card-footer">
           <span class="deadline-timer"><i class="fa-solid fa-clock-rotate-left"></i> ${formattedDeadline}</span>
           <div class="card-actions">
-            <a href="#post/${opp.id}" class="btn btn-secondary btn-sm" aria-label="Details for ${opp.title}">Details</a>
+            <a href="/opportunities/${opp.id}" data-slug="${opp.id}" data-analytics="opportunity-click" data-opp-id="${opp.id}" class="btn btn-secondary btn-sm" aria-label="Details for ${opp.title}">Details</a>
             ${hasApplyUrl ? `
-              <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" aria-label="Apply for ${opp.title}">Apply <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+              <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" data-analytics="apply-click" data-opp-id="${opp.id}" aria-label="Apply for ${opp.title}">Apply <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
             ` : `
               <button class="btn btn-secondary btn-sm" disabled title="Application URL Unavailable">Closed</button>
             `}
@@ -1443,8 +1722,9 @@ const App = {
 
   compactCardTemplate(opp, isActive = false) {
     const activeClass = isActive ? 'active' : '';
+    const escapedTitle = (opp.title || '').replace(/"/g, '&quot;');
     return `
-      <div class="compact-opp-card ${activeClass}" data-id="${opp.id}" role="button" tabindex="0">
+      <div class="compact-opp-card ${activeClass}" data-id="${opp.id}" data-opp-id="${opp.id}" data-opp-title="${escapedTitle}" data-analytics="opportunity-click" role="button" tabindex="0">
         <div class="compact-card-header">
           <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
           <span class="compact-card-date">${opp.date}</span>
@@ -1562,7 +1842,7 @@ const App = {
             <p>${opp.deadline}</p>
           </div>
         </div>
-        <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-now-split">Apply Now <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-now-split" data-analytics="apply-click" data-opp-id="${opp.id}">Apply Now <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
       </div>
     `;
 
@@ -2107,14 +2387,17 @@ const App = {
 
   templateSinglePost(postId) {
     const opp = DataStore.getOpportunities(true).find((o) => o.id === postId);
-    if (!opp) {
+    const isAdmin = sessionStorage.getItem("ath_admin_logged_in") === "true";
+    const isPublished = opp && (opp.status === "published" || !opp.status);
+
+    if (!opp || (!isPublished && !isAdmin)) {
       return `
         <section class="section">
           <div class="container text-center" style="padding: 80px 24px;">
             <div class="error-404-box" style="max-width: 540px; margin: 0 auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 48px 24px; box-shadow: var(--shadow-md);">
               <i class="fa-solid fa-triangle-exclamation" style="font-size: 56px; color: var(--color-accent); margin-bottom: 20px;"></i>
               <h2 style="font-size: 26px; margin-bottom: 12px; color: var(--text-primary);">Opportunity Not Found</h2>
-              <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">This posting may have expired, been archived, or removed from the directory.</p>
+              <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">This posting may have expired, been archived, is currently in draft, or removed from the directory.</p>
               <a href="#opportunities" class="btn btn-primary"><i class="fa-solid fa-arrow-left"></i> Back to Opportunities Directory</a>
             </div>
           </div>
@@ -2127,16 +2410,18 @@ const App = {
     const formattedDeadline = opp.deadline === "Rolling" ? "Rolling" : opp.deadline;
 
     const requirementsList = (opp.requirements || [])
-      .map((req) => `<li><i class="fa-regular fa-square-check"></i> ${req}</li>`)
+      .map((req) => `<li><i class="fa-solid fa-circle-check req-check"></i> <span>${req}</span></li>`)
       .join("");
 
     const benefitsList = (opp.benefits || [])
-      .map((ben) => `<li><i class="fa-regular fa-star"></i> ${ben}</li>`)
+      .map((ben) => `<li><i class="fa-solid fa-star ben-star"></i> <span>${ben}</span></li>`)
       .join("");
 
     const skillsBadges = opp.skills && opp.skills.length
       ? opp.skills.map((s) => `<span class="badge-skill">${s}</span>`).join("")
       : "";
+
+    const isUrgent = opp.deadline && opp.deadline.toLowerCase().includes('rolling') === false && !opp.deadline.toLowerCase().includes('open');
 
     // Related Opportunities using DataStore similarity matching
     const relatedList = DataStore.getRelatedOpportunities(opp.id, 3);
@@ -2145,22 +2430,43 @@ const App = {
       : "";
 
     const hasApplyUrl = opp.applyUrl && opp.applyUrl.trim() !== "" && opp.applyUrl !== "#";
+    const postHeroImage = opp.image || fallbackImage;
 
     return `
       <section class="section post-detail-section">
         <div class="container">
-          <!-- Back Link Breadcrumb -->
+          <!-- Breadcrumb Navigation -->
           <div class="post-detail-top-nav">
-            <a href="#opportunities" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Directory</a>
+            <nav class="post-breadcrumb" aria-label="Breadcrumb">
+              <a href="#opportunities" class="breadcrumb-back-btn">
+                <i class="fa-solid fa-arrow-left"></i> Back to Directory
+              </a>
+              <span class="breadcrumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+              <a href="#opportunities" class="breadcrumb-link">Opportunities</a>
+              <span class="breadcrumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+              <span class="breadcrumb-current cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, '')}">${opp.category}</span>
+            </nav>
           </div>
 
-          <!-- 1. Opportunity Title (Prominently displayed at the top) -->
+          <!-- 1. Post Header & Title -->
           <div class="post-detail-header">
             <div class="post-header-badges">
-              <span class="category-badge cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, "")}">${opp.category}</span>
-              ${opp.remote ? `<span class="badge-status draft">${opp.remote}</span>` : ""}
-              ${opp.experienceLevel ? `<span class="badge-status published">${opp.experienceLevel}</span>` : ""}
+              <span class="category-badge-chip cat-${opp.category.toLowerCase().replace(/[^a-z0-9]/g, "")}">
+                <i class="fa-solid fa-tag"></i> ${opp.category}
+              </span>
+              <span class="badge-status-chip ${opp.remote === 'Remote' ? 'badge-remote' : 'badge-onsite'}">
+                <i class="fa-solid ${opp.remote === 'Remote' ? 'fa-house-laptop' : 'fa-building'}"></i> ${opp.remote || 'Onsite'}
+              </span>
+              ${opp.experienceLevel ? `
+                <span class="badge-status-chip badge-level">
+                  <i class="fa-solid fa-graduation-cap"></i> ${opp.experienceLevel}
+                </span>
+              ` : ''}
+              <span class="badge-status-chip badge-verified">
+                <i class="fa-solid fa-circle-check"></i> Verified Listing
+              </span>
             </div>
+            
             <h1 class="post-detail-title">${opp.title}</h1>
             
             <!-- Metadata Summary Strip -->
@@ -2176,7 +2482,7 @@ const App = {
                 <div class="strip-icon"><i class="fa-solid fa-location-dot"></i></div>
                 <div class="strip-info">
                   <h5>Location</h5>
-                  <p>${opp.location}</p>
+                  <p>${opp.country || opp.location}</p>
                 </div>
               </div>
               <div class="strip-item">
@@ -2186,52 +2492,80 @@ const App = {
                   <p>${opp.date}</p>
                 </div>
               </div>
-              <div class="strip-item">
-                <div class="strip-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <div class="strip-item ${isUrgent ? 'strip-urgent' : ''}">
+                <div class="strip-icon ${isUrgent ? 'icon-urgent' : ''}"><i class="fa-solid fa-clock-rotate-left"></i></div>
                 <div class="strip-info">
-                  <h5>Deadline</h5>
-                  <p>${formattedDeadline}</p>
+                  <h5>Application Deadline</h5>
+                  <p class="${isUrgent ? 'text-urgent' : ''}">${formattedDeadline}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 2. Hero Image (Directly below title, responsive, consistent aspect ratio) -->
-          <div class="post-detail-hero-image-wrap">
-            <img src="${opp.image || fallbackImage}" alt="${opp.title}" class="post-detail-hero-img" loading="lazy" onerror="this.onerror=null; this.src='${fallbackImage}';">
+          <!-- 2. Landscape Post Image (Strict 16:9 Aspect Ratio, Responsive, Object-fit Cover) -->
+          <div class="post-detail-hero-image-wrap" id="hero-image-container">
+            <img 
+              src="${postHeroImage}" 
+              alt="${opp.title}" 
+              class="post-detail-hero-img" 
+              id="hero-main-img"
+              loading="eager" 
+              onerror="this.onerror=null; this.src='${fallbackImage}';"
+            >
+            <div class="hero-image-badge-pill">
+              <i class="fa-solid fa-shield-halved"></i> Official Opportunity
+            </div>
+            <button type="button" class="hero-image-expand-btn" id="hero-img-expand-trigger" title="View Full Image">
+              <i class="fa-solid fa-up-right-and-down-left-from-center"></i> <span>View Full Image</span>
+            </button>
           </div>
 
-          <!-- 3. Opportunity Details (Main Content Area + Sidebar) -->
+          <!-- 3. Opportunity Details & Main Layout -->
           <div class="post-detail-grid">
             <div class="post-main-content">
-              <!-- Description -->
               <div class="post-body-content">
+                <!-- Overview -->
                 <div class="content-block">
-                  <h3>Opportunity Overview</h3>
+                  <div class="content-block-header">
+                    <div class="block-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <h3>Opportunity Overview</h3>
+                  </div>
                   <div class="post-description-text">${opp.description ? opp.description.replace(/\n/g, '<br>') : ''}</div>
                 </div>
 
+                <!-- Requirements -->
                 ${requirementsList ? `
                 <div class="content-block">
-                  <h3>Eligibility & Requirements</h3>
-                  <ul class="custom-list">
+                  <div class="content-block-header">
+                    <div class="block-icon"><i class="fa-solid fa-list-check"></i></div>
+                    <h3>Eligibility & Requirements</h3>
+                  </div>
+                  <ul class="post-detail-list">
                     ${requirementsList}
                   </ul>
                 </div>
                 ` : ''}
 
+                <!-- Benefits -->
                 ${benefitsList ? `
                 <div class="content-block">
-                  <h3>Benefits & Compensation</h3>
-                  <ul class="custom-list">
+                  <div class="content-block-header">
+                    <div class="block-icon"><i class="fa-solid fa-award"></i></div>
+                    <h3>Benefits & Compensation</h3>
+                  </div>
+                  <ul class="post-detail-list">
                     ${benefitsList}
                   </ul>
                 </div>
                 ` : ''}
 
+                <!-- Target Skills -->
                 ${skillsBadges ? `
                 <div class="content-block">
-                  <h3>Target Skills</h3>
+                  <div class="content-block-header">
+                    <div class="block-icon"><i class="fa-solid fa-bullseye"></i></div>
+                    <h3>Target Skills</h3>
+                  </div>
                   <div class="detail-skills-container">
                     ${skillsBadges}
                   </div>
@@ -2243,17 +2577,22 @@ const App = {
               <div class="post-apply-cta-section">
                 <div class="apply-cta-card">
                   <div class="apply-cta-text">
-                    <h4>Ready to Apply?</h4>
-                    <p>Apply directly via the provider's official portal. Access is free with zero registration.</p>
+                    <h4>Ready to Submit Your Application?</h4>
+                    <p>Apply directly via the provider's official portal. Afri Tech Hub provides direct verified links with zero registration required.</p>
+                    <div class="apply-cta-perks">
+                      <span><i class="fa-solid fa-circle-check"></i> 100% Free Access</span>
+                      <span><i class="fa-solid fa-circle-check"></i> Direct Official Portal</span>
+                      <span><i class="fa-solid fa-circle-check"></i> No Intermediary Fees</span>
+                    </div>
                   </div>
                   <div class="apply-cta-actions">
                     ${hasApplyUrl ? `
-                      <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-cta">
+                      <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-cta" data-analytics="apply-click" data-opp-id="${opp.id}">
                         Apply Now <i class="fa-solid fa-arrow-up-right-from-square"></i>
                       </a>
                     ` : `
                       <button class="btn btn-secondary btn-apply-cta" disabled>
-                        <i class="fa-solid fa-circle-xmark"></i> Application URL Unavailable
+                        <i class="fa-solid fa-circle-xmark"></i> Applications Closed
                       </button>
                     `}
                   </div>
@@ -2261,12 +2600,12 @@ const App = {
 
                 <!-- Social Share Bar -->
                 <div class="post-share-bar">
-                  <span class="share-label">Share this opportunity:</span>
+                  <span class="share-label"><i class="fa-solid fa-share-nodes"></i> Share this opportunity:</span>
                   <div class="share-icons">
                     <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(opp.title)}" target="_blank" rel="noopener noreferrer" class="share-btn" aria-label="Share on X / Twitter"><i class="fa-brands fa-x-twitter"></i></a>
                     <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}" target="_blank" rel="noopener noreferrer" class="share-btn" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
                     <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(opp.title + " " + window.location.href)}" target="_blank" rel="noopener noreferrer" class="share-btn" aria-label="Share on WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-                    <button class="share-btn" id="share-copy-link" title="Copy Link"><i class="fa-solid fa-link"></i></button>
+                    <button class="share-btn" id="share-copy-link" title="Copy Link" aria-label="Copy link to clipboard"><i class="fa-solid fa-link"></i></button>
                   </div>
                 </div>
               </div>
@@ -2275,10 +2614,13 @@ const App = {
             <!-- Sidebar Summary -->
             <aside class="post-sidebar-sticky">
               <div class="apply-card-box">
-                <h4 class="apply-card-title">Listing Summary</h4>
+                <div class="apply-card-header">
+                  <h4 class="apply-card-title"><i class="fa-solid fa-clipboard-check"></i> Quick Summary</h4>
+                  <span class="badge-status-chip badge-verified" style="padding: 4px 10px; font-size: 11px;"><i class="fa-solid fa-check"></i> Verified</span>
+                </div>
                 <table class="summary-table">
                   <tr>
-                    <td><i class="fa-solid fa-building"></i> Company</td>
+                    <td><i class="fa-solid fa-building"></i> Organization</td>
                     <td>${opp.company}</td>
                   </tr>
                   <tr>
@@ -2287,10 +2629,10 @@ const App = {
                   </tr>
                   <tr>
                     <td><i class="fa-solid fa-layer-group"></i> Target Level</td>
-                    <td>${opp.experienceLevel || "Graduate"}</td>
+                    <td>${opp.experienceLevel || "Open to All"}</td>
                   </tr>
                   <tr>
-                    <td><i class="fa-solid fa-house-laptop"></i> Setting</td>
+                    <td><i class="fa-solid fa-house-laptop"></i> Work Setting</td>
                     <td>${opp.remote || "Onsite"}</td>
                   </tr>
                   <tr>
@@ -2304,7 +2646,7 @@ const App = {
                 </table>
 
                 ${hasApplyUrl ? `
-                  <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-now">
+                  <a href="${opp.applyUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-apply-now" data-analytics="apply-click" data-opp-id="${opp.id}">
                     Apply Now <i class="fa-solid fa-arrow-up-right-from-square"></i>
                   </a>
                 ` : `
@@ -2312,6 +2654,23 @@ const App = {
                     Application Closed
                   </button>
                 `}
+                <div class="sidebar-guarantee-note">
+                  <i class="fa-solid fa-shield-halved"></i> Verified opportunity curated for African innovators.
+                </div>
+              </div>
+
+              <!-- WhatsApp Community Box -->
+              <div class="sidebar-whatsapp-card">
+                <div class="wa-header">
+                  <div class="wa-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                  <div>
+                    <h4>Never Miss an Opportunity</h4>
+                  </div>
+                </div>
+                <p>Join 5,000+ Africans receiving verified tech vacancies, fellowships, and scholarships directly on WhatsApp.</p>
+                <a href="https://chat.whatsapp.com/Bd2MI5seG7y8HoJjbfpQrH" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-join">
+                  <i class="fa-brands fa-whatsapp"></i> Join WhatsApp Group
+                </a>
               </div>
             </aside>
           </div>
@@ -2327,6 +2686,16 @@ const App = {
               </div>
             </div>
           ` : ''}
+
+          <!-- 6. Lightbox Modal for Uncropped Full Image Inspection -->
+          <div class="image-lightbox-modal" id="post-image-lightbox" role="dialog" aria-modal="true" aria-label="Opportunity image preview">
+            <div class="lightbox-dialog">
+              <button type="button" class="lightbox-close-btn" id="lightbox-close-trigger" aria-label="Close image preview">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+              <img src="${postHeroImage}" alt="${opp.title} Full View" id="lightbox-full-img" onerror="this.onerror=null; this.src='${fallbackImage}';">
+            </div>
+          </div>
         </div>
       </section>
     `;
@@ -2413,6 +2782,12 @@ const App = {
             </button>
             <button class="dashboard-tab-btn ${activeTab === "messages" ? "active" : ""}" data-tab="messages">
               <i class="fa-solid fa-inbox"></i> Inbox Inquiries (${messagesCount})
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === "seo" ? "active" : ""}" data-tab="seo">
+              <i class="fa-solid fa-chart-line"></i> SEO &amp; Sitemap
+            </button>
+            <button class="dashboard-tab-btn ${activeTab === "analytics" ? "active" : ""}" data-tab="analytics">
+              <i class="fa-solid fa-chart-simple"></i> Website Statistics
             </button>
           </aside>
 
@@ -2630,9 +3005,21 @@ const App = {
               <input type="url" id="adm-opp-url" class="admin-form-control" placeholder="https://provider-portal.com/apply" required>
             </div>
 
-            <!-- Field 6: Image Upload & Preview -->
+            <!-- Field 6: Publication Status -->
             <div class="admin-form-group">
-              <label class="form-label">6. Opportunity Cover Image</label>
+              <label class="form-label" for="adm-opp-status">6. Publication Status *</label>
+              <select id="adm-opp-status" class="admin-form-control" required>
+                <option value="published" selected>Published (Public &amp; Search Engines)</option>
+                <option value="draft">Draft (Admin Only - Hidden from Public &amp; Sitemap)</option>
+              </select>
+              <small style="color:var(--text-muted); font-size:12px; margin-top:4px; display:block;">
+                Draft opportunities are excluded from sitemaps, public searches, and search engine crawlers.
+              </small>
+            </div>
+
+            <!-- Field 7: Image Upload & Preview -->
+            <div class="admin-form-group">
+              <label class="form-label">7. Opportunity Cover Image</label>
               <div class="admin-form-row">
                 <div class="admin-form-group" style="margin-bottom:0;">
                   <input type="file" id="adm-opp-img-file" class="admin-form-control" accept="image/*">
@@ -2643,6 +3030,52 @@ const App = {
               </div>
               <div class="image-preview-box" id="adm-img-preview" style="margin-top:12px;">
                 <span>No cover selected</span>
+              </div>
+            </div>
+
+            <!-- Section: Search Engine Optimization (SEO) Settings -->
+            <div class="admin-seo-settings-box" style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--border-radius-md); padding:20px; margin-top:20px;">
+              <h4 style="margin:0 0 12px 0; font-size:15px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-magnifying-glass" style="color:var(--color-primary);"></i> Search Engine Optimization (SEO)
+              </h4>
+              <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+                Customize how this opportunity appears on Google Search results and social media shares. Defaults will be automatically generated if left blank.
+              </p>
+
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-seo-title">Custom SEO Meta Title (Optional)</label>
+                <input type="text" id="adm-opp-seo-title" class="admin-form-control" placeholder="e.g. Call for Applications: Tech Fellowship 2026 | Afri Tech Hub" maxlength="70">
+                <small style="color:var(--text-muted); font-size:11px; display:flex; justify-content:space-between; margin-top:4px;">
+                  <span>Recommended: 50-60 characters</span>
+                  <span id="adm-seo-title-count">0 / 70</span>
+                </small>
+              </div>
+
+              <div class="admin-form-group">
+                <label class="form-label" for="adm-opp-seo-desc">Custom SEO Meta Description (Optional)</label>
+                <textarea id="adm-opp-seo-desc" class="admin-form-control" rows="3" placeholder="Brief, compelling summary for Google Search snippets..." maxlength="160"></textarea>
+                <small style="color:var(--text-muted); font-size:11px; display:flex; justify-content:space-between; margin-top:4px;">
+                  <span>Recommended: 120-155 characters</span>
+                  <span id="adm-seo-desc-count">0 / 160</span>
+                </small>
+              </div>
+
+              <!-- Live Google Search Result Preview -->
+              <div style="margin-top:16px;">
+                <label class="form-label" style="font-size:12px; margin-bottom:8px; display:block;">Live Google Search Snippet Preview</label>
+                <div id="adm-google-preview" style="background:#ffffff; color:#202124; padding:16px; border-radius:8px; border:1px solid #dadce0; font-family:arial,sans-serif; text-align:left;">
+                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; font-size:12px; color:#202124;">
+                    <div style="width:18px; height:18px; border-radius:50%; background:#10b981; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:bold;">A</div>
+                    <span style="font-weight:500;">Afri Tech Hub</span>
+                    <span style="color:#5f6368;" id="preview-google-url">https://afritechhub.xyz &rsaquo; opportunities</span>
+                  </div>
+                  <div id="preview-google-title" style="color:#1a0dab; font-size:18px; line-height:1.3; font-weight:400; text-decoration:none; cursor:pointer; margin-bottom:4px; word-break:break-word;">
+                    Opportunity Title | Afri Tech Hub
+                  </div>
+                  <div id="preview-google-desc" style="color:#4d5156; font-size:13px; line-height:1.5; word-break:break-word;">
+                    Snippet preview will show how this opportunity listing appears on Google Search.
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2877,7 +3310,896 @@ const App = {
       `;
     }
 
+    if (tab === "seo") {
+      const allOpps = DataStore.getOpportunities(true);
+      const published = allOpps.filter((o) => o.status === "published" || !o.status);
+      const drafts = allOpps.filter((o) => o.status === "draft");
+      const domain = (DataStore.SITE_CONFIG && DataStore.SITE_CONFIG.domain) || "https://afritechhub.xyz";
+
+      return `
+        <div class="animate-fade-in-up">
+          <div style="margin-bottom:25px;">
+            <h3 style="font-size:18px; margin:0 0 6px 0;">
+              <i class="fa-solid fa-chart-line" style="color:var(--color-primary); margin-right:8px;"></i>
+              SEO, Crawlability &amp; Dynamic Sitemap
+            </h3>
+            <p style="color:var(--text-muted); font-size:13px; margin:0;">
+              Real-time Google search readiness and XML sitemap generator for ${domain}
+            </p>
+          </div>
+
+          <!-- SEO Status Cards -->
+          <div class="stats-grid" style="margin-bottom:24px;">
+            <div class="stat-card">
+              <div class="stat-card-info">
+                <h3>Indexed Pages (Sitemap)</h3>
+                <div class="value" style="color:var(--color-primary);">${published.length + 7}</div>
+              </div>
+              <div class="stat-card-icon" style="background-color:var(--color-primary-light); color:var(--color-primary);"><i class="fa-solid fa-sitemap"></i></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-info">
+                <h3>Published Opportunities</h3>
+                <div class="value">${published.length}</div>
+              </div>
+              <div class="stat-card-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-info">
+                <h3>Excluded Drafts</h3>
+                <div class="value" style="color:hsl(35, 95%, 40%);">${drafts.length}</div>
+              </div>
+              <div class="stat-card-icon" style="background-color:hsl(35, 95%, 93%); color:hsl(35, 95%, 45%);"><i class="fa-solid fa-pencil"></i></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-info">
+                <h3>Robots Directives</h3>
+                <div class="value" style="font-size:16px; font-weight:700;">Active / Verified</div>
+              </div>
+              <div class="stat-card-icon" style="background-color:hsl(200, 95%, 93%); color:hsl(200, 95%, 35%);"><i class="fa-solid fa-robot"></i></div>
+            </div>
+          </div>
+
+          <!-- Actions Grid -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-bottom:24px;">
+            <div class="admin-card-body">
+              <h4 style="font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-file-code" style="color:var(--color-primary);"></i> Dynamic XML Sitemap
+              </h4>
+              <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
+                Sitemap automatically stays synchronized with your published opportunity directory. Drafts and admin URLs are strictly excluded.
+              </p>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-download-sitemap">
+                  <i class="fa-solid fa-download"></i> Download sitemap.xml
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-sitemap">
+                  <i class="fa-solid fa-copy"></i> Copy XML to Clipboard
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-card-body">
+              <h4 style="font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-robot" style="color:var(--color-primary);"></i> Search Engine Robots.txt
+              </h4>
+              <p style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
+                Directs Googlebot and Bingbot to the XML sitemap while disallowing private admin directories and internal authentication endpoints.
+              </p>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-download-robots">
+                <i class="fa-solid fa-download"></i> Download robots.txt
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Sitemap XML Preview -->
+          <div class="admin-card-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h4 style="font-size:15px; margin:0;">
+                <i class="fa-solid fa-code" style="color:var(--color-primary); margin-right:8px;"></i> Generated sitemap.xml Preview
+              </h4>
+              <span style="font-size:12px; color:var(--text-muted);">${domain}/sitemap.xml</span>
+            </div>
+            <pre id="admin-sitemap-preview" style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:var(--border-radius-sm); padding:16px; max-height:320px; overflow:auto; font-family:monospace; font-size:12px; color:var(--text-primary); margin:0;"></pre>
+          </div>
+        </div>
+      `;
+    }
+
+    if (tab === "analytics") {
+      return this.templateAdminAnalytics();
+    }
+
     return "";
+  },
+
+  templateAdminAnalytics() {
+    const range = this.state.analyticsRange || "7d";
+    const now = new Date();
+    let dateFrom = null;
+    let dateTo = new Date().toISOString();
+
+    if (range === "today") {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      dateFrom = startOfToday.toISOString();
+    } else if (range === "7d") {
+      dateFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (range === "30d") {
+      dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (range === "90d") {
+      dateFrom = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (range === "year") {
+      dateFrom = new Date(now.getFullYear(), 0, 1).toISOString();
+    } else if (range === "custom" && this.state.analyticsCustomFrom) {
+      dateFrom = new Date(this.state.analyticsCustomFrom).toISOString();
+      if (this.state.analyticsCustomTo) {
+        const endCustom = new Date(this.state.analyticsCustomTo);
+        endCustom.setHours(23, 59, 59, 999);
+        dateTo = endCustom.toISOString();
+      }
+    }
+
+    const overview = DataStore.getAnalyticsOverview(dateFrom, dateTo);
+    const opps = DataStore.getAnalyticsByOpportunity(dateFrom, dateTo);
+    const countries = DataStore.getAnalyticsByCountry(dateFrom, dateTo);
+    const recentActivity = DataStore.getRecentAnalyticsActivity(12);
+
+    const rangeLabels = {
+      today: "Today",
+      "7d": "Last 7 Days",
+      "30d": "Last 30 Days",
+      "90d": "Last 90 Days",
+      year: "This Year",
+      all: "All Time",
+      custom: "Custom Range"
+    };
+
+    const currentRangeLabel = rangeLabels[range] || "Last 7 Days";
+
+    return `
+      <div class="animate-fade-in-up">
+        <!-- Analytics Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="font-size:20px; font-weight:800; margin:0 0 6px 0; color:var(--text-primary); display:flex; align-items:center; gap:10px;">
+              <i class="fa-solid fa-chart-simple" style="color:var(--color-primary);"></i>
+              Website Statistics &amp; Engagement Analytics
+            </h3>
+            <p style="color:var(--text-muted); font-size:13px; margin:0;">
+              Real-time, privacy-first analytics directly powered by your existing Afri Tech Hub database.
+            </p>
+          </div>
+          <div class="analytics-live-pulse">
+            <span class="pulse-dot"></span>
+            <span>First-Party Tracking: <strong>Active</strong></span>
+          </div>
+        </div>
+
+        <!-- Date Range Filter Toolbar -->
+        <div class="analytics-toolbar">
+          <div class="analytics-toolbar-left">
+            <button class="analytics-range-btn ${range === "today" ? "active" : ""}" data-range="today">Today</button>
+            <button class="analytics-range-btn ${range === "7d" ? "active" : ""}" data-range="7d">Last 7 Days</button>
+            <button class="analytics-range-btn ${range === "30d" ? "active" : ""}" data-range="30d">Last 30 Days</button>
+            <button class="analytics-range-btn ${range === "90d" ? "active" : ""}" data-range="90d">Last 90 Days</button>
+            <button class="analytics-range-btn ${range === "year" ? "active" : ""}" data-range="year">This Year</button>
+            <button class="analytics-range-btn ${range === "all" ? "active" : ""}" data-range="all">All Time</button>
+            <div class="analytics-custom-dates">
+              <input type="date" id="analytics-date-from" class="analytics-date-input" value="${this.state.analyticsCustomFrom || ""}" title="Start Date">
+              <span style="font-size:12px; color:var(--text-muted);">to</span>
+              <input type="date" id="analytics-date-to" class="analytics-date-input" value="${this.state.analyticsCustomTo || ""}" title="End Date">
+              <button class="btn btn-secondary btn-sm" id="btn-analytics-apply-custom" style="padding:4px 10px; font-size:12px;">Apply</button>
+            </div>
+          </div>
+          <div class="analytics-toolbar-right">
+            <button class="btn btn-secondary btn-sm" id="btn-analytics-refresh" title="Refresh metrics">
+              <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-analytics-export-csv" title="Export CSV Report">
+              <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+            <button class="btn btn-delete btn-sm" id="btn-analytics-clear" title="Reset Analytics">
+              <i class="fa-solid fa-trash-can"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- 8-Metric High Level KPI Grid -->
+        <div class="analytics-stats-grid">
+          <!-- Total Impressions -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Impressions</span>
+              <div class="kpi-icon sky"><i class="fa-solid fa-eye"></i></div>
+            </div>
+            <div class="kpi-value">${overview.impressions.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-check"></i> In-viewport card views</div>
+          </div>
+
+          <!-- Total Page Views -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Page Views</span>
+              <div class="kpi-icon primary"><i class="fa-solid fa-file-lines"></i></div>
+            </div>
+            <div class="kpi-value">${overview.pageViews.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-compass"></i> All platform routes</div>
+          </div>
+
+          <!-- Opportunity Views -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Opportunity Views</span>
+              <div class="kpi-icon purple"><i class="fa-solid fa-book-open-reader"></i></div>
+            </div>
+            <div class="kpi-value">${overview.opportunityViews.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-arrow-trend-up"></i> Detail page reads</div>
+          </div>
+
+          <!-- Opportunity Clicks -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Opportunity Clicks</span>
+              <div class="kpi-icon amber"><i class="fa-solid fa-arrow-pointer"></i></div>
+            </div>
+            <div class="kpi-value">${overview.opportunityClicks.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-bullseye"></i> Card title &amp; link clicks</div>
+          </div>
+
+          <!-- Apply CTA Clicks -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Apply Clicks</span>
+              <div class="kpi-icon emerald"><i class="fa-solid fa-paper-plane"></i></div>
+            </div>
+            <div class="kpi-value" style="color:var(--color-primary);">${overview.applyClicks.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-circle-check"></i> Outbound official applications</div>
+          </div>
+
+          <!-- Unique Visitors -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Unique Visitors</span>
+              <div class="kpi-icon teal"><i class="fa-solid fa-users"></i></div>
+            </div>
+            <div class="kpi-value">${overview.uniqueVisitors.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-user-shield"></i> Anonymous device tokens</div>
+          </div>
+
+          <!-- Browsing Sessions -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Active Sessions</span>
+              <div class="kpi-icon indigo"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            </div>
+            <div class="kpi-value">${overview.uniqueSessions.toLocaleString()}</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-laptop"></i> Discrete user sessions</div>
+          </div>
+
+          <!-- Overall CTR -->
+          <div class="analytics-kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Click-Through Rate</span>
+              <div class="kpi-icon rose"><i class="fa-solid fa-bullseye"></i></div>
+            </div>
+            <div class="kpi-value">${overview.ctr}%</div>
+            <div class="kpi-subtext"><i class="fa-solid fa-chart-pie"></i> Card clicks / impressions</div>
+          </div>
+        </div>
+
+        <!-- Charts Grid (Timeline + Device Breakdown) -->
+        <div class="analytics-charts-grid">
+          <!-- Main Timeline Chart -->
+          <div class="analytics-chart-box">
+            <div class="analytics-chart-header">
+              <div>
+                <h4><i class="fa-solid fa-chart-line" style="color:var(--color-primary);"></i> Visitor Activity &amp; Engagement Trends</h4>
+                <p>Daily volume of page views, impressions, opportunity clicks, and apply CTA clicks (${currentRangeLabel})</p>
+              </div>
+            </div>
+            <div class="chart-canvas-container" id="analytics-trend-wrapper">
+              <canvas id="analytics-trend-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Device Breakdown Chart -->
+          <div class="analytics-chart-box">
+            <div class="analytics-chart-header">
+              <div>
+                <h4><i class="fa-solid fa-mobile-screen-button" style="color:var(--color-primary);"></i> Device Breakdown</h4>
+                <p>Visitor hardware distribution</p>
+              </div>
+            </div>
+            <div class="chart-canvas-container" id="analytics-device-wrapper">
+              <canvas id="analytics-device-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opportunity Performance Breakdown Table -->
+        <div class="analytics-table-card">
+          <div class="analytics-table-header">
+            <div>
+              <h4><i class="fa-solid fa-list-check" style="color:var(--color-primary);"></i> Opportunity Performance Breakdown</h4>
+              <p style="color:var(--text-muted); font-size:12px; margin:2px 0 0 0;">
+                Comprehensive metrics for every listing (impressions, card clicks, detailed views, application conversions)
+              </p>
+            </div>
+            <div class="analytics-table-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="analytics-opp-search" class="admin-form-control" placeholder="Search by opportunity, company, or category...">
+            </div>
+          </div>
+
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th style="min-width:240px;">Opportunity &amp; Sponsor</th>
+                  <th>Category</th>
+                  <th style="text-align:center;">Impressions</th>
+                  <th style="text-align:center;">Card Clicks</th>
+                  <th style="text-align:center;">Full Views</th>
+                  <th style="text-align:center;">Apply Clicks</th>
+                  <th style="text-align:center;">CTR</th>
+                  <th style="text-align:center;">Conversion Rate</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-opp-table-body">
+                ${
+                  opps.length === 0
+                    ? '<tr><td colspan="8" class="text-center" style="padding:40px; color:var(--text-muted);">No opportunity engagement records found for this period.</td></tr>'
+                    : opps
+                        .map(
+                          (o) => `
+                    <tr>
+                      <td>
+                        <div class="admin-table-title">
+                          <a href="/opportunities/${o.id}" data-slug="${o.id}" target="_blank" style="color:inherit; text-decoration:none;">
+                            ${o.title}
+                          </a>
+                        </div>
+                        <div class="admin-table-company">${o.company}</div>
+                      </td>
+                      <td>
+                        <span class="category-badge cat-${(o.category || "").toLowerCase().replace(/[^a-z0-9]/g, "")}">${o.category}</span>
+                      </td>
+                      <td style="text-align:center; font-weight:600;">${o.impressions.toLocaleString()}</td>
+                      <td style="text-align:center; font-weight:600;">${o.clicks.toLocaleString()}</td>
+                      <td style="text-align:center; font-weight:600;">${o.views.toLocaleString()}</td>
+                      <td style="text-align:center; font-weight:700; color:var(--color-primary);">${o.applyClicks.toLocaleString()}</td>
+                      <td style="text-align:center;">
+                        <span class="badge-ctr">${o.ctr}%</span>
+                      </td>
+                      <td style="text-align:center;">
+                        <span class="badge-conv">${o.conversion}%</span>
+                      </td>
+                    </tr>
+                  `,
+                        )
+                        .join("")
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Geographic Visitor Distribution & Architecture Split Section -->
+        <div class="analytics-split-grid">
+          <!-- Geographic Breakdown Table -->
+          <div class="analytics-table-card" style="margin-bottom:0;">
+            <div style="margin-bottom:16px;">
+              <h4 style="font-size:15px; font-weight:700; margin:0 0 4px 0; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-earth-africa" style="color:var(--color-primary);"></i> Geographic Visitor Distribution
+              </h4>
+              <p style="color:var(--text-muted); font-size:12px; margin:0;">Country traffic breakdown based on client-side IP geolocation</p>
+            </div>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Country</th>
+                    <th style="text-align:center;">Visitors</th>
+                    <th style="text-align:center;">Views</th>
+                    <th style="text-align:center;">Applies</th>
+                    <th style="width:130px;">Traffic Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    countries.length === 0
+                      ? '<tr><td colspan="5" class="text-center" style="padding:30px; color:var(--text-muted);">No geographic events logged yet.</td></tr>'
+                      : countries
+                          .slice(0, 8)
+                          .map(
+                            (c) => `
+                      <tr>
+                        <td>
+                          <div class="country-flag-badge">
+                            <span class="country-code-pill">${c.countryCode}</span>
+                            <span>${c.country}</span>
+                          </div>
+                        </td>
+                        <td style="text-align:center; font-weight:600;">${c.visitors.toLocaleString()}</td>
+                        <td style="text-align:center;">${c.pageViews.toLocaleString()}</td>
+                        <td style="text-align:center; font-weight:700; color:var(--color-primary);">${c.applyClicks.toLocaleString()}</td>
+                        <td>
+                          <div class="metric-bar-wrap">
+                            <div style="flex:1; background:var(--bg-secondary); border-radius:3px; height:6px; overflow:hidden;">
+                              <div class="metric-bar-fill" style="width:${Math.max(c.percentage, 5)}%;"></div>
+                            </div>
+                            <span style="font-size:11px; font-weight:700; color:var(--text-secondary); width:32px; text-align:right;">${c.percentage}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    `,
+                          )
+                          .join("")
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Privacy & Architecture Assurance Card -->
+          <div class="analytics-table-card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="margin-bottom:16px;">
+                <h4 style="font-size:15px; font-weight:700; margin:0 0 4px 0; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                  <i class="fa-solid fa-shield-halved" style="color:var(--color-primary);"></i> First-Party Privacy Architecture
+                </h4>
+                <p style="color:var(--text-muted); font-size:12px; margin:0;">Zero external tracking cookies, zero third-party data sharing</p>
+              </div>
+
+              <div class="analytics-info-list">
+                <div class="analytics-info-item">
+                  <i class="fa-solid fa-database"></i>
+                  <div>
+                    <strong>Native DataStore Storage</strong>
+                    <span>Events are captured directly into the client database with automated 8,000-record quota protection.</span>
+                  </div>
+                </div>
+                <div class="analytics-info-item">
+                  <i class="fa-solid fa-user-ninja"></i>
+                  <div>
+                    <strong>No Personal Identifiers (PII)</strong>
+                    <span>No personal names, contact info, or raw IP addresses are ever stored or exposed in analytics logs.</span>
+                  </div>
+                </div>
+                <div class="analytics-info-item">
+                  <i class="fa-solid fa-stopwatch"></i>
+                  <div>
+                    <strong>Non-Blocking Event Pipeline</strong>
+                    <span>Asynchronous dispatch and IntersectionObserver execution ensure 0ms latency for website visitors.</span>
+                  </div>
+                </div>
+                <div class="analytics-info-item">
+                  <i class="fa-solid fa-scale-balanced"></i>
+                  <div>
+                    <strong>GDPR &amp; NDPR Compliant</strong>
+                    <span>Complies with Nigerian and international data privacy frameworks with built-in data reset and CSV export tools.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:16px; padding:12px; background:rgba(0,135,81,0.08); border:1px solid rgba(0,135,81,0.2); border-radius:var(--border-radius-sm); font-size:12px; color:var(--text-secondary);">
+              <i class="fa-solid fa-circle-info" style="color:var(--color-primary); margin-right:6px;"></i>
+              Need to archive records? Use the <strong>Export CSV</strong> action above to download complete event records.
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Activity Feed -->
+        <div class="analytics-table-card" style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div>
+              <h4 style="font-size:15px; font-weight:700; margin:0 0 4px 0; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-bolt" style="color:var(--color-primary);"></i> Live Event Activity Feed
+              </h4>
+              <p style="color:var(--text-muted); font-size:12px; margin:0;">Real-time feed of recent visitor interactions across the platform</p>
+            </div>
+            <span style="font-size:12px; color:var(--text-muted);"><i class="fa-solid fa-clock"></i> Auto-logging active</span>
+          </div>
+
+          <div class="analytics-feed-list">
+            ${
+              recentActivity.length === 0
+                ? '<div class="text-center" style="padding:30px; color:var(--text-muted);">No activity recorded yet. Browse around the website to watch live events log here!</div>'
+                : recentActivity
+                    .map((item) => {
+                      const timeStr = this.formatRelativeTime(item.created_at);
+                      const displayTitle = item.opportunity_title || item.opportunity_id || item.page_path || "Website Route";
+                      const deviceIcon = item.device_type === "Mobile" ? "fa-mobile-screen" : item.device_type === "Tablet" ? "fa-tablet-screen-button" : "fa-laptop";
+
+                      return `
+                        <div class="analytics-feed-item">
+                          <div class="feed-item-left">
+                            <span class="feed-type-badge ${item.event_type}">${item.event_type.replace(/_/g, " ")}</span>
+                            <div class="feed-details">
+                              <div class="feed-title">${displayTitle}</div>
+                              <div class="feed-meta">
+                                <span><i class="fa-solid ${deviceIcon}"></i> ${item.device_type}</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-location-dot"></i> ${item.country || "Nigeria"}</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-arrow-right-to-bracket"></i> ${item.referrer || "Direct"}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="feed-item-right">${timeStr}</div>
+                        </div>
+                      `;
+                    })
+                    .join("")
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  bindAnalyticsTabEvents() {
+    const range = this.state.analyticsRange || "7d";
+    const now = new Date();
+    let dateFrom = null;
+    let dateTo = new Date().toISOString();
+
+    if (range === "today") {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      dateFrom = startOfToday.toISOString();
+    } else if (range === "7d") {
+      dateFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (range === "30d") {
+      dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (range === "90d") {
+      dateFrom = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (range === "year") {
+      dateFrom = new Date(now.getFullYear(), 0, 1).toISOString();
+    } else if (range === "custom" && this.state.analyticsCustomFrom) {
+      dateFrom = new Date(this.state.analyticsCustomFrom).toISOString();
+      if (this.state.analyticsCustomTo) {
+        const endCustom = new Date(this.state.analyticsCustomTo);
+        endCustom.setHours(23, 59, 59, 999);
+        dateTo = endCustom.toISOString();
+      }
+    }
+
+    // 1. Range Button click listeners
+    const rangeBtns = document.querySelectorAll(".analytics-range-btn");
+    rangeBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const selectedRange = btn.getAttribute("data-range");
+        this.state.analyticsRange = selectedRange;
+        const vp = document.getElementById("dashboard-viewport");
+        if (vp) {
+          vp.innerHTML = this.renderDashboardTab("analytics");
+          this.bindDashboardTabEvents("analytics");
+        }
+      });
+    });
+
+    // 2. Custom Date Range apply
+    const applyCustomBtn = document.getElementById("btn-analytics-apply-custom");
+    if (applyCustomBtn) {
+      applyCustomBtn.addEventListener("click", () => {
+        const fromInput = document.getElementById("analytics-date-from");
+        const toInput = document.getElementById("analytics-date-to");
+        if (fromInput && fromInput.value) {
+          this.state.analyticsRange = "custom";
+          this.state.analyticsCustomFrom = fromInput.value;
+          this.state.analyticsCustomTo = toInput ? toInput.value : "";
+          const vp = document.getElementById("dashboard-viewport");
+          if (vp) {
+            vp.innerHTML = this.renderDashboardTab("analytics");
+            this.bindDashboardTabEvents("analytics");
+          }
+        } else {
+          this.showToast("Please enter a starting date.", "info");
+        }
+      });
+    }
+
+    // 3. Refresh Action
+    const refreshBtn = document.getElementById("btn-analytics-refresh");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", () => {
+        const vp = document.getElementById("dashboard-viewport");
+        if (vp) {
+          vp.innerHTML = this.renderDashboardTab("analytics");
+          this.bindDashboardTabEvents("analytics");
+          this.showToast("Analytics refreshed.", "success");
+        }
+      });
+    }
+
+    // 4. Export CSV Action
+    const exportBtn = document.getElementById("btn-analytics-export-csv");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", () => {
+        const csv = DataStore.exportAnalyticsCsv(dateFrom, dateTo);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ath-analytics-report-${new Date().toISOString().split("T")[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showToast("Analytics CSV report exported successfully.", "success");
+      });
+    }
+
+    // 5. Clear Analytics Action
+    const clearBtn = document.getElementById("btn-analytics-clear");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        if (confirm("Are you sure you want to reset all analytics tracking history? This will delete stored event logs.")) {
+          DataStore.clearAnalyticsData();
+          const vp = document.getElementById("dashboard-viewport");
+          if (vp) {
+            vp.innerHTML = this.renderDashboardTab("analytics");
+            this.bindDashboardTabEvents("analytics");
+          }
+          this.showToast("Analytics logs have been reset.", "info");
+        }
+      });
+    }
+
+    // 6. Table search filter
+    const searchInput = document.getElementById("analytics-opp-search");
+    if (searchInput) {
+      searchInput.addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        const rows = document.querySelectorAll("#analytics-opp-table-body tr");
+        rows.forEach((row) => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(q) ? "" : "none";
+        });
+      });
+    }
+
+    // 7. Render Charts
+    this.renderAnalyticsCharts(dateFrom, dateTo);
+  },
+
+  renderAnalyticsCharts(dateFrom, dateTo) {
+    const timeSeries = DataStore.getAnalyticsTimeSeries(dateFrom, dateTo);
+    const devices = DataStore.getAnalyticsDeviceBreakdown(dateFrom, dateTo);
+
+    const trendCanvas = document.getElementById("analytics-trend-chart");
+    const deviceCanvas = document.getElementById("analytics-device-chart");
+
+    if (!trendCanvas || !deviceCanvas) return;
+
+    // Destroy existing chart instances to avoid canvas reuse errors
+    if (this._analyticsTrendChart) {
+      try { this._analyticsTrendChart.destroy(); } catch (e) {}
+      this._analyticsTrendChart = null;
+    }
+    if (this._analyticsDeviceChart) {
+      try { this._analyticsDeviceChart.destroy(); } catch (e) {}
+      this._analyticsDeviceChart = null;
+    }
+
+    // Determine current theme colors
+    const isDark = document.body.classList.contains("dark-theme");
+    const textColor = isDark ? "#94a3b8" : "#64748b";
+    const gridColor = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)";
+
+    if (typeof window.Chart !== "undefined") {
+      try {
+        // 1. Line/Area Trend Chart
+        this._analyticsTrendChart = new window.Chart(trendCanvas, {
+          type: "line",
+          data: {
+            labels: timeSeries.labels,
+            datasets: [
+              {
+                label: "Page Views",
+                data: timeSeries.pageViews,
+                borderColor: "#008751",
+                backgroundColor: "rgba(0, 135, 81, 0.12)",
+                borderWidth: 2.5,
+                tension: 0.35,
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: "#008751"
+              },
+              {
+                label: "Impressions",
+                data: timeSeries.impressions,
+                borderColor: "#0284c7",
+                backgroundColor: "rgba(2, 132, 199, 0.05)",
+                borderWidth: 2,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: "#0284c7"
+              },
+              {
+                label: "Opportunity Clicks",
+                data: timeSeries.clicks,
+                borderColor: "#d97706",
+                borderWidth: 2,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: "#d97706"
+              },
+              {
+                label: "Apply Clicks",
+                data: timeSeries.applyClicks,
+                borderColor: "#10b981",
+                borderWidth: 2.5,
+                borderDash: [4, 4],
+                tension: 0.35,
+                pointRadius: 4,
+                pointBackgroundColor: "#10b981"
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: "index",
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                position: "top",
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 12, weight: "600" },
+                  color: textColor
+                }
+              },
+              tooltip: {
+                padding: 10,
+                cornerRadius: 8
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: gridColor },
+                ticks: { color: textColor, font: { size: 11 } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: gridColor },
+                ticks: { color: textColor, font: { size: 11 }, precision: 0 }
+              }
+            }
+          }
+        });
+
+        // 2. Device Breakdown Doughnut Chart
+        this._analyticsDeviceChart = new window.Chart(deviceCanvas, {
+          type: "doughnut",
+          data: {
+            labels: ["Desktop", "Mobile", "Tablet"],
+            datasets: [
+              {
+                data: [devices.counts.Desktop, devices.counts.Mobile, devices.counts.Tablet],
+                backgroundColor: ["#008751", "#0284c7", "#d97706"],
+                borderWidth: 2,
+                borderColor: isDark ? "#1e293b" : "#ffffff"
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "68%",
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 12, weight: "600" },
+                  color: textColor
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const label = context.label || "";
+                    const value = context.raw || 0;
+                    const pct = devices.percentages[label] || 0;
+                    return ` ${label}: ${value} (${pct}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn("Chart.js render error, fallback to SVG:", err);
+      }
+    }
+
+    // Fallback: Render SVG chart if Chart.js is not loaded or errors
+    this.renderAnalyticsSvgChart(trendCanvas.parentElement, timeSeries);
+    this.renderAnalyticsDeviceSvg(deviceCanvas.parentElement, devices);
+  },
+
+  renderAnalyticsSvgChart(container, timeSeries) {
+    if (!container) return;
+    const maxVal = Math.max(...timeSeries.pageViews, ...timeSeries.impressions, 10);
+    const count = timeSeries.labels.length;
+    const width = 600;
+    const height = 240;
+
+    const pointsPV = timeSeries.pageViews.map((v, i) => {
+      const x = 40 + (i / Math.max(count - 1, 1)) * (width - 80);
+      const y = height - 40 - (v / maxVal) * (height - 80);
+      return `${x},${y}`;
+    }).join(" ");
+
+    container.innerHTML = `
+      <div class="svg-chart-container">
+        <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:100%;">
+          <line x1="40" y1="${height - 40}" x2="${width - 20}" y2="${height - 40}" stroke="var(--border-color)" stroke-width="1" />
+          <polyline fill="none" stroke="#008751" stroke-width="3" points="${pointsPV}" />
+        </svg>
+        <div style="display:flex; justify-content:center; gap:20px; font-size:12px; margin-top:8px;">
+          <span style="color:#008751;"><i class="fa-solid fa-circle"></i> Page Views</span>
+        </div>
+      </div>
+    `;
+  },
+
+  renderAnalyticsDeviceSvg(container, devices) {
+    if (!container) return;
+    container.innerHTML = `
+      <div style="padding:20px 10px; display:flex; flex-direction:column; justify-content:center; height:100%; gap:12px;">
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; font-weight:600;">
+            <span><i class="fa-solid fa-laptop" style="color:#008751;"></i> Desktop</span>
+            <span>${devices.percentages.Desktop}% (${devices.counts.Desktop})</span>
+          </div>
+          <div style="background:var(--bg-secondary); height:8px; border-radius:4px; overflow:hidden;">
+            <div style="background:#008751; height:100%; width:${devices.percentages.Desktop}%;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; font-weight:600;">
+            <span><i class="fa-solid fa-mobile-screen" style="color:#0284c7;"></i> Mobile</span>
+            <span>${devices.percentages.Mobile}% (${devices.counts.Mobile})</span>
+          </div>
+          <div style="background:var(--bg-secondary); height:8px; border-radius:4px; overflow:hidden;">
+            <div style="background:#0284c7; height:100%; width:${devices.percentages.Mobile}%;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; font-weight:600;">
+            <span><i class="fa-solid fa-tablet-screen-button" style="color:#d97706;"></i> Tablet</span>
+            <span>${devices.percentages.Tablet}% (${devices.counts.Tablet})</span>
+          </div>
+          <div style="background:var(--bg-secondary); height:8px; border-radius:4px; overflow:hidden;">
+            <div style="background:#d97706; height:100%; width:${devices.percentages.Tablet}%;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  formatRelativeTime(dateStr) {
+    if (!dateStr) return "Just now";
+    try {
+      const now = Date.now();
+      const diff = Math.floor((now - new Date(dateStr).getTime()) / 1000);
+      if (diff < 5) return "Just now";
+      if (diff < 60) return `${diff}s ago`;
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    } catch (e) {
+      return "Recently";
+    }
   },
 
   templatePrivacy() {
@@ -2916,8 +4238,10 @@ const App = {
               </ul>
               <p>We will never sell, lease, distribute, or share your email address or personal details with third-party advertisers or sponsors.</p>
               
-              <h2>4. Cookies & Web Tracking</h2>
-              <p>We may use basic cookies or local storage settings (such as saving your preferred Dark Mode toggle) to improve your visual experience. These configurations do not contain personal identifier details and are not uploaded to our servers.</p>
+              <h2>4. Cookies &amp; First-Party Analytics</h2>
+              <p>We are firmly committed to user privacy and open access. We do not use third-party tracking cookies, behavioral ad pixels, or commercial tracking services (such as Google Analytics or Meta Pixel) to track you across the web.</p>
+              <p>To continually improve our curation and understand which opportunities best serve African talent, we operate a lightweight, privacy-focused <strong>First-Party Analytics System</strong>. This system collects strictly anonymous engagement signals (such as page views, opportunity card impressions, and application button clicks) using pseudo-anonymous session and device tokens stored locally in your browser session.</p>
+              <p>We do not store your IP address, name, email, or device fingerprints in our analytics logs, and analytics data is never sold, shared, or transferred to third-party ad networks. You may also disable local storage or clear your browser cache at any time without impacting your ability to freely browse Afri Tech Hub.</p>
               
               <h2>5. External Application Portals</h2>
               <p>Our service indexes and curates external vacancies, grants, and scholarships. Clicking "Apply" redirects you to the official registration portals of external organizations (e.g. Google, Mastercard Foundation). Afri Tech Hub does not manage these external sites and is not liable for their privacy practices. We recommend reading their respective privacy policies before applying.</p>

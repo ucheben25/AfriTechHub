@@ -3,25 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Afri Tech Hub | Opportunities for African Talent</title>
     <meta
       name="description"
-      content="Afri Tech Hub - Empowering African entrepreneurs by sharing vacancies, jobs, grants, scholarships, internships, and business funding opportunities with no login or registration."
+      content="Discover jobs, grants, fellowships, scholarships, internships and other opportunities for African talent on Afri Tech Hub."
     />
     <meta
       name="keywords"
-      content="African tech, entrepreneurship opportunities, African grants, scholarships for Africans, jobs in Africa, tech vacancies Africa, African startups funding, internships Africa"
+      content="African tech, entrepreneurship opportunities, African grants, scholarships for Africans, jobs in Africa, tech vacancies Africa, African startups funding, internships Africa, fellowships Africa"
     />
     <meta name="author" content="Afri Tech Hub" />
-    <meta
-      property="og:title"
-      content="Afri Tech Hub - African Opportunities Portal"
-    />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://afritechhub.xyz/" />
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:site_name" content="Afri Tech Hub" />
+    <meta property="og:title" content="Afri Tech Hub | Opportunities for African Talent" />
     <meta
       property="og:description"
-      content="Find verified jobs, grants, scholarships, and funding opportunities across Africa. Access is completely open and free."
+      content="Discover jobs, grants, fellowships, scholarships, internships and other opportunities for African talent on Afri Tech Hub."
     />
     <meta property="og:type" content="website" />
-    <title>Afri Tech Hub | Empowering African Entrepreneurs & Youth</title>
+    <meta property="og:url" content="https://afritechhub.xyz/" />
+    <meta property="og:image" content="https://afritechhub.xyz/img/logo.png" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@afritechhub" />
+    <meta name="twitter:title" content="Afri Tech Hub | Opportunities for African Talent" />
+    <meta
+      name="twitter:description"
+      content="Discover jobs, grants, fellowships, scholarships, internships and other opportunities for African talent on Afri Tech Hub."
+    />
+    <meta name="twitter:image" content="https://afritechhub.xyz/img/logo.png" />
+
+    <!-- Structured Data (Schema.org) for WebSite & Organization -->
+    <script type="application/ld+json" id="global-website-schema">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Afri Tech Hub",
+      "url": "https://afritechhub.xyz/",
+      "description": "Discover jobs, grants, fellowships, scholarships, internships and other opportunities for African talent on Afri Tech Hub.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://afritechhub.xyz/#opportunities?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json" id="global-organization-schema">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Afri Tech Hub",
+      "url": "https://afritechhub.xyz/",
+      "logo": "https://afritechhub.xyz/img/logo.png",
+      "email": "hubafritech@gmail.com",
+      "telephone": "+2349159701354",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Aba",
+        "addressRegion": "Abia State",
+        "addressCountry": "Nigeria"
+      },
+      "sameAs": [
+        "https://twitter.com/afritechhub",
+        "https://linkedin.com/company/afritechhub",
+        "https://instagram.com/afritechhub"
+      ]
+    }
+    </script>
+    <!-- Dynamic Page Schema Placeholder -->
+    <script type="application/ld+json" id="dynamic-page-schema"></script>
 
     <!-- Website Favicon / Browser Tab Icon -->
     <link rel="icon" type="image/png" href="img/logo.png" />
@@ -330,7 +387,9 @@
     <!-- ==========================================
        DATA & CORE JAVASCRIPT FILES
        ========================================== -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="data.js"></script>
+    <script src="analytics.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

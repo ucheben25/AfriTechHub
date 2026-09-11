@@ -1,5 +1,18 @@
+# robots.txt for Afri Tech Hub
 User-agent: *
 Allow: /
+Allow: /opportunities/
+Allow: /about
+Allow: /faq
+Allow: /contact
+Allow: /privacy
+Allow: /terms
 
-# Sitemap
-Sitemap: https://afritechhub.org/sitemap.xml
+# Disallow administrative control panels and internal authentication endpoints
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /#admin-login
+Disallow: /#admin-dashboard
+
+# Dynamic XML Sitemap location
+Sitemap: https://afritechhub.xyz/sitemap.xml
