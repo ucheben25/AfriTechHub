@@ -12,43 +12,82 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4990240821116832"
        crossorigin="anonymous"></script>
 
+  <!-- Canonical URL -->
   <link rel="canonical" href="https://afritechhub.xyz/opportunities/" />
+
+  <!-- Open Graph Metadata -->
+  <meta property="og:site_name" content="Afri Tech Hub" />
   <meta property="og:title" content="Opportunities for African Talent | Afri Tech Hub" />
   <meta property="og:description" content="Browse verified tech jobs, startup grants, graduate fellowships, and academic scholarships tailored for African innovators." />
+  <meta property="og:type" content="website" />
   <meta property="og:url" content="https://afritechhub.xyz/opportunities/" />
   <meta property="og:image" content="https://afritechhub.xyz/img/logo.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter / X Card Metadata -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@afritechhub" />
+  <meta name="twitter:title" content="Opportunities for African Talent | Afri Tech Hub" />
+  <meta name="twitter:description" content="Browse verified tech jobs, startup grants, graduate fellowships, and academic scholarships tailored for African innovators." />
+  <meta name="twitter:image" content="https://afritechhub.xyz/img/logo.png" />
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Opportunities for African Talent",
+  "url": "https://afritechhub.xyz/opportunities/",
+  "description": "Browse verified tech jobs, startup grants, graduate fellowships, and academic scholarships tailored for African innovators."
+}
+  </script>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/img/logo.png" />
+
+  <!-- FontAwesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
-  <header class="site-header">
+  
+  <header class="site-header" role="banner">
     <div class="container header-main">
-      <a href="/index.html#home" class="brand">
-        <img src="/img/logo.png" alt="Afri Tech Hub Logo" class="brand-logo-img" width="36" height="36" />
+      <a href="/index.html#home" class="brand" id="nav-brand">
+        <img src="/img/logo.png" alt="Afri Tech Hub Logo" class="brand-logo-img" loading="lazy" width="36" height="36" />
         <div class="brand-text-container">
           <span class="brand-name">Afri Tech Hub</span>
           <span class="brand-tagline">Empowering African Innovators</span>
         </div>
       </a>
-      <nav class="nav-menu">
-        <a href="/index.html#home" class="nav-link">Home</a>
-        <a href="/opportunities/" class="nav-link active" aria-current="page">Opportunities</a>
-        <a href="/index.html#faq" class="nav-link">FAQs</a>
-        <a href="/index.html#about" class="nav-link">About</a>
-        <a href="/index.html#contact" class="nav-link">Contact</a>
+      <nav class="nav-menu" role="navigation" aria-label="Main Navigation">
+        <a href="/index.html#home" class="nav-link ">Home</a>
+        <a href="/opportunities/" class="nav-link active">Opportunities</a>
+        <a href="/faq" class="nav-link ">FAQs</a>
+        <a href="/about" class="nav-link ">About</a>
+        <a href="/privacy" class="nav-link ">Privacy</a>
+        <a href="/contact" class="nav-link ">Contact</a>
       </nav>
     </div>
   </header>
-
-  <main class="section">
-    <div class="container">
-      <div class="section-header text-center">
-        <h1>Opportunities</h1>
-        <p>Explore curated career, academic, and business growth pathways across Africa</p>
-      </div>
-
-      <div class="opportunities-grid" style="margin-top: 32px;">
-        
+  <main id="main-content" role="main">
+    
+      <section class="section">
+        <div class="container">
+          <div class="section-header text-center">
+            <h1>Opportunities</h1>
+            <p>Explore curated career, academic, and business growth pathways across Africa</p>
+          </div>
+          <div class="opportunities-grid" style="margin-top: 32px;">
+            
       <article class="opportunity-card animate-fade-in-up">
         <div class="card-image-container">
           <a href="/opportunities/call-for-applications-pibbss-winter-fellowship-program-20262027-in-south-africa-3000-monthly-stipend-free-accommodation-flights-and-mentorship" aria-label="View details for Call For Applications: PIBBSS Winter Fellowship Program 2026–2027 in South Africa ($3,000 Monthly Stipend, Free Accommodation, Flights, and Mentorship)">
@@ -178,13 +217,40 @@
         </div>
       </article>
     
-      </div>
-    </div>
+          </div>
+        </div>
+      </section>
+    
   </main>
-
-  <footer class="site-footer">
+  
+  <footer class="site-footer" role="contentinfo">
     <div class="container">
-      <p>&copy; 2026 Afri Tech Hub. All rights reserved.</p>
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand footer-brand">
+            <img src="/img/logo.png" alt="Afri Tech Hub Logo" class="brand-logo-img" loading="lazy" width="30" height="30" />
+            <div class="brand-text-container">
+              <span class="brand-name">Afri Tech Hub</span>
+              <span class="brand-tagline">Empowering African Innovators</span>
+            </div>
+          </div>
+          <p class="footer-desc">Empowering African innovators, graduates, and entrepreneurs by providing direct, open access to verified career, academic, and financial opportunities.</p>
+        </div>
+        <div class="footer-col">
+          <h3 class="footer-heading">Platform</h3>
+          <ul class="footer-links">
+            <li><a href="/index.html#home" class="footer-link">Home</a></li>
+            <li><a href="/opportunities/" class="footer-link">Opportunities</a></li>
+            <li><a href="/about" class="footer-link">About Us</a></li>
+            <li><a href="/faq" class="footer-link">FAQs</a></li>
+            <li><a href="/privacy" class="footer-link">Privacy Policy</a></li>
+            <li><a href="/terms" class="footer-link">Terms of Use</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Afri Tech Hub. All rights reserved.</p>
+      </div>
     </div>
   </footer>
 </body>

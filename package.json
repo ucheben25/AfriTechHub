@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "node scripts/generate-seo.js",
     "start": "http-server -p 8080",
     "seo:build": "node scripts/generate-seo.js",
     "qa:screenshots": "node scripts/qa-screenshots.js",
